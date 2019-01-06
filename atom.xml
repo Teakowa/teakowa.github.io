@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Teakowa</title>
+  
+  
+  <link href="/atom.xml" rel="self"/>
+  
+  <link href="https://teakowa.me/"/>
+  <updated>2018-12-25T11:17:08.357Z</updated>
+  <id>https://teakowa.me/</id>
+  
+  <author>
+    <name>Teakowa</name>
+    
+  </author>
+  
+  <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Use Docker-in-Docker with GitLab CI/CD</title>
+    <link href="https://teakowa.me/archives/use-docker-in-docker-with-gitlab-ci-cd/"/>
+    <id>https://teakowa.me/archives/use-docker-in-docker-with-gitlab-ci-cd/</id>
+    <published>2018-12-24T19:21:00.000Z</published>
+    <updated>2018-12-25T11:17:08.357Z</updated>
+    
+    <summary type="html">
+    
+      
+      
+        
+        
+          &lt;p&gt;迫于不想手动 Build Docker 镜像和 Push 镜像（懒），决定使用 Docker in Docker (dind) with GitLab CI/CD&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;注意：&lt;/strong&gt;这个方案仅适用于在可信环境下构建的可信代码，任何运行
+        
+      
+    
+    </summary>
+    
+    
+      <category term="Docker" scheme="https://teakowa.me/tags/Docker/"/>
+    
+      <category term="DevOps" scheme="https://teakowa.me/tags/DevOps/"/>
+    
+      <category term="GitLab" scheme="https://teakowa.me/tags/GitLab/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Hello World</title>
+    <link href="https://teakowa.me/archives/hello-world/"/>
+    <id>https://teakowa.me/archives/hello-world/</id>
+    <published>2018-10-27T08:23:03.132Z</published>
+    <updated>2018-10-27T10:05:03.566Z</updated>
+    
+    <summary type="html">
+    
+      
+      
+        
+        
+          &lt;p&gt;自豪的采用 Hexo 与 &lt;a href=&quot;https://github.com/probberechts/hexo-theme-cactus&quot; target=&quot;_blank&quot;
+        
+      
+    
+    </summary>
+    
+    
+  </entry>
+  
+</feed>
