@@ -39,6 +39,9 @@
     <title><%= page_title() %></title>
     <!-- styles -->
     <%- css('css/style') %>
+    <style>
+    <%- fa_css() %>
+    </style>
     <!-- persian styles -->
     <% if (theme.direction) { %>
       <%- css('css/rtl') %>
