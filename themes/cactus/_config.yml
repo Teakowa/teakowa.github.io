@@ -77,7 +77,7 @@ logo:
   enabled: true
   width: 50
   height: 50
-  url: /images/logo.png
+  url: /images/logo.jpg
   gravatar: false
   grayout: true
 
