@@ -7,13 +7,12 @@ title: About
 Co-founder of [@XNXKTech](https://github.com/XNXKTech) | 写一些奇奇怪怪可以提升效率的小东西
 
 ## SKILLS
-
-- {% fa_inline code %} PHP, Node.js, Python, Golang, Rust, Swift, Ruby
-- {% fa_inline wrench %} Laravel, PHPUnit, Git, GitHub Action
-- {% fa_inline server %} Nginx
-- {% fa_inline database %} PostgreSQL, MySQL, Redis
-- {% fa_inline cube %} Docker, Kubernetes
-- {% fa_inline desktop %} macOS, Linux(Debian or Ubuntu)
+- <i class="fa fa-code" aria-hidden="true"></i> PHP, Node.js, Python, Golang, Rust, Swift, Ruby
+- <i class="fa fa-wrench" aria-hidden="true"></i> Laravel, PHPUnit, Git, GitHub Action
+- <i class="fa fa-server" aria-hidden="true"></i> Nginx
+- <i class="fa fa-database" aria-hidden="true"></i> PostgreSQL, MySQL, Redis
+- <i class="fa fa-cube" aria-hidden="true"></i> Docker, Kubernetes
+- <i class="fa fa-desktop" aria-hidden="true"></i> macOS, Linux(Debian or Ubuntu)
 
 ## Working Experience
 
@@ -37,4 +36,4 @@ Co-founder of [@XNXKTech](https://github.com/XNXKTech) | 写一些奇奇怪怪�
 - GitHub [@Teakowa](https://github.com/Teakowa)
 - Email: contact[at]teakowa.com
 
-<!-- 如无特殊声明，本站所有内容均在 [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) 许可下发布 -->
+如无特殊声明，本站所有内容均在 [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) 许可下发布

@@ -5,7 +5,7 @@
 # Site
 title: Teakowa
 subtitle:
-description: If a head is cut off, two more shall take its place
+description: The fight to keep the internet free and open for everyone
 keywords:
 author: Teakowa
 language:
@@ -54,12 +54,12 @@ render_drafts: false
 post_asset_folder: true
 relative_link: false
 future: true
-highlight: 
+highlight:
     enable: true
     auto_detect: true
     line_number: false
     tab_replace:
-  
+
 # Home page setting
 # path: Root path for your blogs index page. (default = '')
 # per_page: Posts displayed per page. (0 = disable pagination)
@@ -68,7 +68,7 @@ index_generator:
   path: ''
   per_page: 5
   order_by: -date
-  
+
 # Category & Tag
 default_category: uncategorized
 category_map:
