@@ -1,0 +1,75 @@
+name: Deploy
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Split string
+        uses: jungwinter/split@v2
+        id: split
+        with:
+          separator: '/'
+          msg: ${{ github.ref }}
+
+      - name: Checkout ${{ steps.split.outputs._2 }}
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ steps.split.outputs._2 }}
+
+      - name: Setup Node ${{ matrix.node }}
+        uses: actions/setup-node@v3.3.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: Setup yarn
+        run: npm install -g yarn
+
+      - name: Setup Nodejs with yarn caching
+        uses: actions/setup-node@v3.3.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: yarn
+
+      - name: Cache dependencies
+        uses: actions/cache@v3.0.4
+        id: node-modules-cache
+        with:
+          path: |
+            node_modules
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn
+
+      - name: Install package.json dependencies with Yarn
+        if: steps.node-modules-cache.outputs.cache-hit != 'true'
+        run: yarn --frozen-lockfile
+        env:
+          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true
+          HUSKY_SKIP_INSTALL: true
+
+      - name: Build
+        run: hexo g
+
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
+          external_repository: Teakowa/teakowa.github.io
+          publish_branch: master
+          cname: teakowa.me
+          allow_empty_commit: true
+          force_orphan: true
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
