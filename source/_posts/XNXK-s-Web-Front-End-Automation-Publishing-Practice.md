@@ -344,7 +344,9 @@ ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
 {% asset_img cache-hit.png %}
 
 并且我们是周期性的更新依赖，单个依赖缓存我们可以用非常久，这样我们就得到了一个高度可复用的项目依赖缓存（和短的账单）
-编译文件
+
+### 编译文件
+
 项目的静态资源缓存也是一个问题，我们希望像项目依赖缓存一样，一次编译多线复用，来省掉那些不必要的构建时间，所以这里我们针对编译也使用了缓存：
 
 ```yaml
@@ -366,6 +368,7 @@ ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
 至此 Build 的使命就完成了，接下来是部署的环节。
 
 ### TCB
+
 我们的前端项目全部都基于 TCB（Tencent Cloudbase）和 Kubernetes 部署，TCB 负责主要的用户访问，Kubernetes 担任热备份的角色，当我们发现 TCB 版本出现问题的时候会直接通过 CDN 节点切到 Kubernetes 上，尽量保证用户访问不受影响。
 
 TCB 的部署使用了可复用工作流（[reusable workflow](https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-reusable-workflow)），还使用了我们自建的 GitHub Action Runner：
