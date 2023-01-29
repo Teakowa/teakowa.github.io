@@ -4,10 +4,10 @@ title: About
 
 > The fight to keep the internet free and open for everyone
 
-Co-founder of [@XNXKTech](https://github.com/XNXKTech) | 写一些奇奇怪怪可以提升效率的小东西
+Founder of [@Bytefloat](https://github.com/Bytefloat) and Co-founder of [@XNXKTech](https://github.com/XNXKTech) | 写一些奇奇怪怪可以提升效率的小东西
 
 ## SKILLS
-- <i class="fa fa-code" aria-hidden="true"></i> PHP, Node.js, Python, Golang, Rust, Swift, Ruby
+- <i class="fa fa-code" aria-hidden="true"></i> PHP, Node.js, Python, Golang, Rust, Swift
 - <i class="fa fa-wrench" aria-hidden="true"></i> Laravel, PHPUnit, Git, GitHub Action
 - <i class="fa fa-server" aria-hidden="true"></i> Nginx
 - <i class="fa fa-database" aria-hidden="true"></i> PostgreSQL, MySQL, Redis
@@ -16,6 +16,8 @@ Co-founder of [@XNXKTech](https://github.com/XNXKTech) | 写一些奇奇怪怪�
 
 ## Working Experience
 
+- 2022.11-Now | Founder & CEO
+  - Bytefloat Inc. Changsha, China
 - 2021.11-Now | Co-founder
   - Virtual Star Technology Co. Chengdu, China
 - 2019.04-Now | Technical Consultant
@@ -26,6 +28,7 @@ Co-founder of [@XNXKTech](https://github.com/XNXKTech) | 写一些奇奇怪怪�
 ## Projects
 
 - [setup-serverless](https://github.com/Teakowa/setup-serverless)
+- [Bytefloat](https://github.com/Bytefloat)
 - [XNXKTech](https://github.com/XNXKTech)
 - [StarUbiquitous](https://github.com/StarUbiquitous)
 
