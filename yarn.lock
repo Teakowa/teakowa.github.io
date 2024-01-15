@@ -629,10 +629,10 @@ hexo-cli@^4.3.0:
     resolve "^1.11.0"
     tildify "^2.0.0"
 
-hexo-fontawesome@^2.3.0:
-  version "2.3.0"
-  resolved "https://registry.yarnpkg.com/hexo-fontawesome/-/hexo-fontawesome-2.3.0.tgz#ce35e50ce43064a35b6cc154d25a20f9299bf944"
-  integrity sha512-CBMCBsVQKLu/Baz7DPaW7tykdJKG2GFcV0iwCCgdpE52DWJL7LU6SUor20fk6a2wAb/Er4YSdiwMsjnhpNgEBg==
+hexo-fontawesome@^2.4.0:
+  version "2.4.0"
+  resolved "https://registry.yarnpkg.com/hexo-fontawesome/-/hexo-fontawesome-2.4.0.tgz#dbf3acd964241d6b2c05ef961b19b7297de54207"
+  integrity sha512-nel1bkQFQ6Mc/qUWSL8BiIn2+5ex1zmZi4yAJUE43fBmxGI4E8uGwxmKMMnrlg+87/1TbiHLqE2TjDxFgssWQg==
   dependencies:
     "@fortawesome/fontawesome-svg-core" "^1.2.36"
   optionalDependencies:
