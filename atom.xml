@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Teakowa</title>
+  
+  
+  <link href="https://teakowa.me/atom.xml" rel="self"/>
+  
+  <link href="https://teakowa.me/"/>
+  <updated>2024-02-24T10:54:49.090Z</updated>
+  <id>https://teakowa.me/</id>
+  
+  <author>
+    <name>Teakowa</name>
+    
+  </author>
+  
+  <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>虚拟星空的 Web 前端自动化发布实践</title>
+    <link href="https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/"/>
+    <id>https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/</id>
+    <published>2022-06-30T00:18:25.000Z</published>
+    <updated>2024-02-24T10:54:49.090Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;大家好，我是 Teakowa，本文将向大家介绍我们虚拟星空是如何基于 GitHub Action 构建 Web 前端自动化发布管道的过程，以及其中踩过的坑。&lt;/p&gt;
+&lt;h2 id=&quot;一些前提介绍&quot;&gt;&lt;a href=&quot;#一些前提介绍&quot; class=&quot;headerlink&quot;</summary>
+        
+      
+    
+    
+    
+    
+    <category term="Docker" scheme="https://teakowa.me/tags/Docker/"/>
+    
+    <category term="DevOps" scheme="https://teakowa.me/tags/DevOps/"/>
+    
+    <category term="GitHab" scheme="https://teakowa.me/tags/GitHab/"/>
+    
+    <category term="GitHub Action" scheme="https://teakowa.me/tags/GitHub-Action/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Use Docker-in-Docker with GitLab CI/CD</title>
+    <link href="https://teakowa.me/archives/use-docker-in-docker-with-gitlab-ci-cd/"/>
+    <id>https://teakowa.me/archives/use-docker-in-docker-with-gitlab-ci-cd/</id>
+    <published>2018-12-25T03:21:00.000Z</published>
+    <updated>2024-02-24T10:54:49.090Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;迫于不想手动 Build Docker 镜像和 Push 镜像（懒），决定使用 Docker in Docker (dind) with GitLab</summary>
+        
+      
+    
+    
+    
+    
+    <category term="Docker" scheme="https://teakowa.me/tags/Docker/"/>
+    
+    <category term="DevOps" scheme="https://teakowa.me/tags/DevOps/"/>
+    
+    <category term="GitLab" scheme="https://teakowa.me/tags/GitLab/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Hello World</title>
+    <link href="https://teakowa.me/archives/hello-world/"/>
+    <id>https://teakowa.me/archives/hello-world/</id>
+    <published>2018-12-25T03:21:00.000Z</published>
+    <updated>2024-02-24T10:54:49.094Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;p&gt;自豪的采用 Hexo 与 &lt;a</summary>
+        
+      
+    
+    
+    
+    
+  </entry>
+  
+</feed>

@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="迫于不想手动 Build Docker 镜像和 Push 镜像（懒），决定使用 Docker in Docker (dind) with GitLab CI&#x2F;CD 注意：这个方案仅适用于在可信环境下构建的可信代码，任何运行 dind 的环境都可能受提权影响。 配置服务器如果服务器上已经安装了 Docker 并且存储驱动已经设置为 overlay2，那么可以跳过这一节。 安装 Doc">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Use Docker-in-Docker with GitLab CI&#x2F;CD">
+<meta property="og:url" content="https://teakowa.me/archives/use-docker-in-docker-with-gitlab-ci-cd/index.html">
+<meta property="og:site_name" content="Teakowa">
+<meta property="og:description" content="迫于不想手动 Build Docker 镜像和 Push 镜像（懒），决定使用 Docker in Docker (dind) with GitLab CI&#x2F;CD 注意：这个方案仅适用于在可信环境下构建的可信代码，任何运行 dind 的环境都可能受提权影响。 配置服务器如果服务器上已经安装了 Docker 并且存储驱动已经设置为 overlay2，那么可以跳过这一节。 安装 Doc">
+<meta property="og:locale">
+<meta property="article:published_time" content="2018-12-25T03:21:00.000Z">
+<meta property="article:modified_time" content="2024-02-24T10:54:49.090Z">
+<meta property="article:author" content="Teakowa">
+<meta property="article:tag" content="Docker">
+<meta property="article:tag" content="DevOps">
+<meta property="article:tag" content="GitLab">
+<meta name="twitter:card" content="summary">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>Use Docker-in-Docker with GitLab CI/CD</title>
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+<meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="Teakowa" type="application/atom+xml">
+</head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="Menu"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="Menu"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="Top" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fas fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" aria-label="Previous post" href="/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/"><i class="fas fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" aria-label="Next post" href="/archives/hello-world/"><i class="fas fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="Back to top" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="Share post" href="#"><i class="fas fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://teakowa.me/archives/use-docker-in-docker-with-gitlab-ci-cd/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://teakowa.me/archives/use-docker-in-docker-with-gitlab-ci-cd/&text=Use Docker-in-Docker with GitLab CI/CD"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://teakowa.me/archives/use-docker-in-docker-with-gitlab-ci-cd/&title=Use Docker-in-Docker with GitLab CI/CD"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://teakowa.me/archives/use-docker-in-docker-with-gitlab-ci-cd/&is_video=false&description=Use Docker-in-Docker with GitLab CI/CD"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Use Docker-in-Docker with GitLab CI/CD&body=Check out this article: https://teakowa.me/archives/use-docker-in-docker-with-gitlab-ci-cd/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://teakowa.me/archives/use-docker-in-docker-with-gitlab-ci-cd/&title=Use Docker-in-Docker with GitLab CI/CD"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://teakowa.me/archives/use-docker-in-docker-with-gitlab-ci-cd/&title=Use Docker-in-Docker with GitLab CI/CD"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://teakowa.me/archives/use-docker-in-docker-with-gitlab-ci-cd/&title=Use Docker-in-Docker with GitLab CI/CD"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://teakowa.me/archives/use-docker-in-docker-with-gitlab-ci-cd/&title=Use Docker-in-Docker with GitLab CI/CD"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://teakowa.me/archives/use-docker-in-docker-with-gitlab-ci-cd/&name=Use Docker-in-Docker with GitLab CI/CD&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://teakowa.me/archives/use-docker-in-docker-with-gitlab-ci-cd/&t=Use Docker-in-Docker with GitLab CI/CD"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    <div id="toc">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%85%8D%E7%BD%AE%E6%9C%8D%E5%8A%A1%E5%99%A8"><span class="toc-number">1.</span> <span class="toc-text">配置服务器</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%89%E8%A3%85-Docker"><span class="toc-number">1.1.</span> <span class="toc-text">安装 Docker</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%85%8D%E7%BD%AE-overlay"><span class="toc-number">1.2.</span> <span class="toc-text">配置 overlay</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%85%8D%E7%BD%AE%E7%8E%AF%E5%A2%83"><span class="toc-number">2.</span> <span class="toc-text">配置环境</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%89%E8%A3%85-Docker-in-Dockers"><span class="toc-number">2.1.</span> <span class="toc-text">安装 Docker-in-Dockers</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%89%E8%A3%85-GitLab-Runner"><span class="toc-number">2.2.</span> <span class="toc-text">安装 GitLab Runner</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%B3%A8%E5%86%8C-Runner"><span class="toc-number">2.3.</span> <span class="toc-text">注册 Runner</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Building-amp-Testing"><span class="toc-number">3.</span> <span class="toc-text">Building &amp; Testing</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Cache"><span class="toc-number">3.1.</span> <span class="toc-text">Cache</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Artifacts"><span class="toc-number">3.2.</span> <span class="toc-text">Artifacts</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Build"><span class="toc-number">3.3.</span> <span class="toc-text">Build</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Test"><span class="toc-number">3.4.</span> <span class="toc-text">Test</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Build-Image"><span class="toc-number">3.5.</span> <span class="toc-text">Build Image</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#gitlab-ci-yml"><span class="toc-number">3.6.</span> <span class="toc-text">.gitlab-ci.yml</span></a></li></ol></li></ol>
+    </div>
+  </span>
+</div>
+
+    
+    <div class="content index py4">
+        
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle" itemprop="name headline">
+        Use Docker-in-Docker with GitLab CI/CD
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span itemprop="name">Teakowa</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2018-12-25T03:21:00.000Z" itemprop="datePublished">2018-12-25</time>
+        
+      
+    </div>
+
+
+      
+
+      
+    <div class="article-tag">
+        <i class="fas fa-tag"></i>
+        <a class="tag-link-link" href="/tags/DevOps/" rel="tag">DevOps</a>, <a class="tag-link-link" href="/tags/Docker/" rel="tag">Docker</a>, <a class="tag-link-link" href="/tags/GitLab/" rel="tag">GitLab</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content" itemprop="articleBody">
+    <p>迫于不想手动 Build Docker 镜像和 Push 镜像（懒），决定使用 Docker in Docker (dind) with GitLab CI&#x2F;CD</p>
+<p><strong>注意：</strong>这个方案仅适用于在可信环境下构建的可信代码，任何运行 dind 的环境都可能受提权影响。</p>
+<h2 id="配置服务器"><a href="#配置服务器" class="headerlink" title="配置服务器"></a>配置服务器</h2><p>如果服务器上已经安装了 Docker 并且存储驱动已经设置为 <code>overlay2</code>，那么可以跳过这一节。</p>
+<h3 id="安装-Docker"><a href="#安装-Docker" class="headerlink" title="安装 Docker"></a>安装 Docker</h3><figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">sudo apt remove -y docker docker-engine docker.io</span><br><span class="line">sudo apt update</span><br><span class="line">sudo apt install -y apt-transport-httpsca-certificates curl software-properties-common</span><br><span class="line">curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -</span><br><span class="line">sudo add-apt-repository \</span><br><span class="line">   <span class="string">&quot;deb [arch=amd64] https://download.docker.com/linux/ubuntu \</span></span><br><span class="line"><span class="string">   <span class="subst">$(lsb_release -cs)</span> \</span></span><br><span class="line"><span class="string">   stable&quot;</span></span><br><span class="line">sudo apt update</span><br><span class="line">sudo apt install -y docker-ce</span><br></pre></td></tr></table></figure>
+
+<p>Docker CE 已经默认使用 <code>overlay2</code> 存储驱动，无需手动配置。</p>
+<h3 id="配置-overlay"><a href="#配置-overlay" class="headerlink" title="配置 overlay"></a>配置 overlay</h3><p>如果 Docker 使用的存储驱动不是 <code>overlay2</code>，那么需要手动配置。</p>
+<p>检查 overlay 模块</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">lsmod | grep overlay</span><br><span class="line">overlay              49152  3</span><br></pre></td></tr></table></figure>
+
+<p>如果没有出现，那么需要添加它</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">modprobe overlay</span><br></pre></td></tr></table></figure>
+
+<p>添加到启动引导中</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">grep <span class="string">&#x27;^overlay$&#x27;</span> /etc/modules || <span class="built_in">echo</span> overlay &gt;&gt;/etc/modules</span><br></pre></td></tr></table></figure>
+
+<p>确保 <code>/etc/docker/daemon.json</code> 中配置了 <code>storage-driver</code></p>
+<figure class="highlight json"><table><tr><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;storage-driver&quot;</span><span class="punctuation">:</span> <span class="string">&quot;overlay2&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>重启 Docker</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">systemctl restart docker</span><br></pre></td></tr></table></figure>
+
+<p><strong>注意：</strong> 切换存储驱动会丢失所有存储的 Docker volume 数据。</p>
+<h2 id="配置环境"><a href="#配置环境" class="headerlink" title="配置环境"></a>配置环境</h2><h3 id="安装-Docker-in-Dockers"><a href="#安装-Docker-in-Dockers" class="headerlink" title="安装 Docker-in-Dockers"></a>安装 Docker-in-Dockers</h3><p>我希望避免污染宿主机 Docker 环境，而且这是长期用于构建的 Docker 实例，所以所有的构建都与宿主机 Docker 环境隔离，<strong>但这并不意味着安全。</strong></p>
+<p>首先创建一个 network</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">docker network create gitlab-runner-net</span><br></pre></td></tr></table></figure>
+
+<p>然后运行 dind</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">docker run -d \</span><br><span class="line">  --name gitlab-dind \</span><br><span class="line">  --privileged \</span><br><span class="line">  --restart always \</span><br><span class="line">  --network gitlab-runner-net \</span><br><span class="line">  -v /var/lib/docker \</span><br><span class="line">  docker:18.06.1-ce-dind \</span><br><span class="line">    --storage-driver=overlay2</span><br></pre></td></tr></table></figure>
+
+<p>这会以特权模式创建一个名为 <code>gitlab-dind</code> 的 Docker 自动重启容器，在匿名卷中使用 <code>var/lib/docker</code> 文件夹。</p>
+<p>需要注意的是 <code>gitlab-dind</code> 在 <code>/var/run/docker.sock</code> 内部有自己的 Docker socket，并且通过 <code>tcp 2375</code> 端口暴露。</p>
+<h3 id="安装-GitLab-Runner"><a href="#安装-GitLab-Runner" class="headerlink" title="安装 GitLab Runner"></a>安装 GitLab Runner</h3><p>之前一直是在宿主机上直接运行的 GitLab Runner，到后面就觉得哪哪不方便，所以以后都使用容器运行 GitLab Runner。</p>
+<p>首先创建一个配置文件</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line"><span class="built_in">mkdir</span> -p /srv/gitlab-runner</span><br><span class="line"><span class="built_in">touch</span> /srv/gitlab-runner/config.toml</span><br></pre></td></tr></table></figure>
+
+<p>然后启动 GitLab Runner</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">docker run -d \</span><br><span class="line">  --name gitlab-runner \</span><br><span class="line">  --restart always \</span><br><span class="line">  --network gitlab-runner-net \</span><br><span class="line">  -v /srv/gitlab-runner/config.toml:/etc/gitlab-runner/config.toml \</span><br><span class="line">  -e DOCKER_HOST=tcp://gitlab-dind:2375 \</span><br><span class="line">  gitlab/gitlab-runner:alpine</span><br></pre></td></tr></table></figure>
+
+<p>注意传递给 <code>gitlab-runner</code> 的 <code>DOCKER_HOST</code> 变量，它指向我们在上面创建的 <code>gitlab-dind</code> 容器的 TCP 端口。</p>
+<p>这样一来，每当 Runner 构建容器时，它都会使用 <code>gitlab-dind</code> 来执行，Runner 就不需要使用特权模式运行了。</p>
+<h3 id="注册-Runner"><a href="#注册-Runner" class="headerlink" title="注册 Runner"></a>注册 Runner</h3><p>登录 GitLab 获取令牌，然后注册</p>
+<figure class="highlight sh"><table><tr><td class="code"><pre><span class="line">docker run -it --<span class="built_in">rm</span> \</span><br><span class="line">  -v /srv/gitlab-runner/config.toml:/etc/gitlab-runner/config.toml \</span><br><span class="line">  gitlab/gitlab-runner:alpine \</span><br><span class="line">    register \</span><br><span class="line">    --executor docker \</span><br><span class="line">    --docker-image docker:18.06.1-ce \</span><br><span class="line">    --docker-volumes /var/run/docker.sock:/var/run/docker.sock</span><br><span class="line"></span><br><span class="line">Running <span class="keyword">in</span> system-mode.</span><br><span class="line"></span><br><span class="line">Please enter the gitlab-ci coordinator URL (e.g. https://gitlab.com/):</span><br><span class="line">[YOUR_GITLAB_URL]</span><br><span class="line">Please enter the gitlab-ci token <span class="keyword">for</span> this runner:</span><br><span class="line">[YOUR_RUNNER_TOKEN]</span><br><span class="line">Please enter the gitlab-ci description <span class="keyword">for</span> this runner:</span><br><span class="line">[abc123def456]: Docker Runner</span><br><span class="line">Please enter the gitlab-ci tags <span class="keyword">for</span> this runner (comma separated):</span><br><span class="line"></span><br><span class="line">Whether to lock Runner to current project [<span class="literal">true</span>/false]:</span><br><span class="line">[<span class="literal">false</span>]:</span><br><span class="line">Registering runner... succeeded                     runner=xxx</span><br><span class="line">Please enter the executor: virtualbox, docker+machine, docker-ssh+machine, ssh, docker-ssh, parallels, shell, kubernetes, docker:</span><br><span class="line">[docker]: docker</span><br><span class="line">Please enter the default Docker image (e.g. ruby:2.1):</span><br><span class="line">[docker:18.06.1-ce]: docker:18.06.1-ce</span><br><span class="line">Runner registered successfully. Feel free to start it, but <span class="keyword">if</span> it<span class="string">&#x27;s running already the config should be automatically reloaded!</span></span><br></pre></td></tr></table></figure>
+
+<p>docker-volumes 将 <code>gitlab-dind</code> 的 Docker socket 安装到每个创建的构建容器中，这样每个构建容器都可以访问 <code>gitlab-dind</code> 的 Docker 环境。</p>
+<p>可以看看 <code>/srv/gitlab-runner/config.toml</code> 文件，大概像这样：</p>
+<figure class="highlight toml"><table><tr><td class="code"><pre><span class="line"><span class="attr">concurrent</span> = <span class="number">1</span></span><br><span class="line"><span class="attr">check_interval</span> = <span class="number">0</span></span><br><span class="line"></span><br><span class="line"><span class="section">[[runners]]</span></span><br><span class="line">  <span class="attr">name</span> = <span class="string">&quot;Docker Runner&quot;</span></span><br><span class="line">  <span class="attr">url</span> = <span class="string">&quot;YOUR_GITLAB_URL&quot;</span></span><br><span class="line">  <span class="attr">token</span> = <span class="string">&quot;PER_RUNNER_TOKEN&quot;</span></span><br><span class="line">  <span class="attr">executor</span> = <span class="string">&quot;docker&quot;</span></span><br><span class="line">  <span class="section">[runners.docker]</span></span><br><span class="line">    <span class="attr">host</span> = <span class="string">&quot;tcp://gitlab-dind:2375&quot;</span></span><br><span class="line">    <span class="attr">tls_verify</span> = <span class="literal">false</span></span><br><span class="line">    <span class="attr">image</span> = <span class="string">&quot;docker:18.06.1-ce&quot;</span></span><br><span class="line">    <span class="attr">privileged</span> = <span class="literal">false</span></span><br><span class="line">    <span class="attr">disable_cache</span> = <span class="literal">false</span></span><br><span class="line">    <span class="attr">volumes</span> = [<span class="string">&quot;/var/run/docker.sock:/var/run/docker.sock&quot;</span>, <span class="string">&quot;/cache&quot;</span>]</span><br><span class="line">    <span class="attr">shm_size</span> = <span class="number">0</span></span><br><span class="line">  <span class="section">[runners.cache]</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="Building-amp-Testing"><a href="#Building-amp-Testing" class="headerlink" title="Building &amp; Testing"></a>Building &amp; Testing</h2><p>GitLab 提供了两种在 pipeline 中共享文件的方法，这对测试构建非常有用，通常我们需要使用 <code>composer</code> 或 <code>npm</code> 安装项目依赖，但如果必须在每个 job 之前构建，这就非常不优雅且浪费时间。</p>
+<h3 id="Cache"><a href="#Cache" class="headerlink" title="Cache"></a>Cache</h3><p>第一个方法是缓存，类似于 Laravel 中的缓存。</p>
+<p>首先使用缓存来节省时间，缓存可以通过重复使用先前作业的内容来加快构建执行的时间。（<a target="_blank" rel="noopener" href="https://docs.gitlab.com/ee/ci/yaml/README.html#cache">cache in Gitlab Docs</a>）</p>
+<figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">cache:</span></span><br><span class="line">    <span class="attr">key:</span> <span class="string">$&#123;CI_COMMIT_REF_SLUG&#125;</span></span><br><span class="line">    <span class="attr">paths:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">vendor/</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="Artifacts"><a href="#Artifacts" class="headerlink" title="Artifacts"></a>Artifacts</h3><p>Artifacts 可以视为 job 的输出，这些文件会自动提供给后续 job。</p>
+<p>比如我有三个 job：<code>build</code> <code>test</code> <code>deploy</code>，如果为在 <code>build</code> 上定义了一些 <code>artifacts</code>，那么 test 和 deploy 会在 job 开始之前下载这些 artifacts.</p>
+<h3 id="Build"><a href="#Build" class="headerlink" title="Build"></a>Build</h3><ul>
+<li>在 build 阶段的 job 中使用 <strong>artifacts</strong> 来为 pipeline 中的其他 job 提供内容</li>
+<li>在构建过程中使用 <strong>cache</strong> 来确保每个 pipeline 不会重复创建 <code>vendor</code></li>
+</ul>
+<figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">image:</span> <span class="string">fspnetwork/php:latest</span></span><br><span class="line"></span><br><span class="line"><span class="attr">cache:</span></span><br><span class="line">    <span class="attr">key:</span> <span class="string">$&#123;CI_COMMIT_REF_SLUG&#125;</span></span><br><span class="line">    <span class="attr">paths:</span> </span><br><span class="line">        <span class="bullet">-</span> <span class="string">vendor/</span></span><br><span class="line"></span><br><span class="line"><span class="string">···</span></span><br><span class="line"></span><br><span class="line"><span class="attr">build:</span></span><br><span class="line">    <span class="attr">stage:</span> <span class="string">build</span></span><br><span class="line">    <span class="attr">artifacts:</span></span><br><span class="line">        <span class="attr">paths:</span></span><br><span class="line">            <span class="bullet">-</span> <span class="string">vendor/</span></span><br><span class="line">    <span class="attr">script:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">cp</span> <span class="string">.env.production</span> <span class="string">.env</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">composer</span> <span class="string">install</span> <span class="string">--prefer-dist</span> <span class="string">--no-ansi</span> <span class="string">--no-interaction</span> <span class="string">--no-progress</span> <span class="string">--no-scripts</span> <span class="string">--optimize-autoloader</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">chmod</span> <span class="string">-R</span> <span class="number">777</span> <span class="string">storage/*</span> <span class="string">bootstrap/cache</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">php</span> <span class="string">artisan</span> <span class="string">key:generate</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">php</span> <span class="string">artisan</span> <span class="string">config:cache</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="Test"><a href="#Test" class="headerlink" title="Test"></a>Test</h3><p>首先从 <code>build</code> job 继承文件，然后使用 <code>phpunit</code> 执行 Test</p>
+<figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">test:</span></span><br><span class="line">    <span class="attr">stage:</span> <span class="string">test</span></span><br><span class="line">    <span class="attr">dependencies:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">build</span></span><br><span class="line">    <span class="attr">script:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">php</span> <span class="string">vendor/bin/phpunit</span> <span class="string">--coverage-text</span> <span class="string">--colors=never</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="Build-Image"><a href="#Build-Image" class="headerlink" title="Build Image"></a>Build Image</h3><p>最后打包 Docker 镜像并推送到 GitLab </p>
+<figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">build_image:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">docker:stable</span></span><br><span class="line">    <span class="attr">stage:</span> <span class="string">build_image</span></span><br><span class="line">    <span class="attr">script:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">docker</span> <span class="string">login</span> <span class="string">-u</span> <span class="string">gitlab-ci-token</span> <span class="string">-p</span> <span class="string">$CI_JOB_TOKEN</span> <span class="string">$CI_REGISTRY</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">docker</span> <span class="string">build</span> <span class="string">-t</span> <span class="string">$CI_REGISTRY_IMAGE</span> <span class="string">.</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">docker</span> <span class="string">push</span> <span class="string">$CI_REGISTRY_IMAGE</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="gitlab-ci-yml"><a href="#gitlab-ci-yml" class="headerlink" title=".gitlab-ci.yml"></a>.gitlab-ci.yml</h3><p><code>.gitlab-ci.yml</code> 全貌：</p>
+<figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">image:</span> <span class="string">fspnetwork/php:latest</span></span><br><span class="line"></span><br><span class="line"><span class="attr">cache:</span></span><br><span class="line">    <span class="attr">key:</span> <span class="string">$&#123;CI_COMMIT_REF_SLUG&#125;</span></span><br><span class="line">    <span class="attr">paths:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">vendor/</span></span><br><span class="line"></span><br><span class="line"><span class="attr">services:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">docker:dind</span></span><br><span class="line"></span><br><span class="line"><span class="attr">stages:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">build</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">test</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">build_image</span></span><br><span class="line"></span><br><span class="line"><span class="attr">variables:</span></span><br><span class="line">    <span class="attr">DOCKER_DRIVER:</span> <span class="string">overlay2</span></span><br><span class="line"></span><br><span class="line"><span class="attr">build:</span></span><br><span class="line">    <span class="attr">stage:</span> <span class="string">build</span></span><br><span class="line">    <span class="attr">artifacts:</span></span><br><span class="line">        <span class="attr">paths:</span></span><br><span class="line">            <span class="bullet">-</span> <span class="string">vendor/</span></span><br><span class="line">    <span class="attr">script:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">cp</span> <span class="string">.env.production</span> <span class="string">.env</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">composer</span> <span class="string">install</span> <span class="string">--prefer-dist</span> <span class="string">--no-ansi</span> <span class="string">--no-interaction</span> <span class="string">--no-progress</span> <span class="string">--no-scripts</span> <span class="string">--optimize-autoloader</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">chmod</span> <span class="string">-R</span> <span class="number">777</span> <span class="string">storage/*</span> <span class="string">bootstrap/cache</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">php</span> <span class="string">artisan</span> <span class="string">key:generate</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">php</span> <span class="string">artisan</span> <span class="string">config:cache</span></span><br><span class="line"></span><br><span class="line"><span class="attr">test:</span></span><br><span class="line">    <span class="attr">stage:</span> <span class="string">test</span></span><br><span class="line">    <span class="attr">dependencies:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">build</span></span><br><span class="line">    <span class="attr">script:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">php</span> <span class="string">vendor/bin/phpunit</span> <span class="string">--coverage-text</span> <span class="string">--colors=never</span></span><br><span class="line"></span><br><span class="line"><span class="attr">build_image:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">docker:stable</span></span><br><span class="line">    <span class="attr">stage:</span> <span class="string">build_image</span></span><br><span class="line">    <span class="attr">script:</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">docker</span> <span class="string">login</span> <span class="string">-u</span> <span class="string">gitlab-ci-token</span> <span class="string">-p</span> <span class="string">$CI_JOB_TOKEN</span> <span class="string">$CI_REGISTRY</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">docker</span> <span class="string">build</span> <span class="string">-t</span> <span class="string">$CI_REGISTRY_IMAGE</span> <span class="string">.</span></span><br><span class="line">        <span class="bullet">-</span> <span class="string">docker</span> <span class="string">push</span> <span class="string">$CI_REGISTRY_IMAGE</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>首先在 Orion 项目上使用了这套环境，在经历了 16 次 failed 之后，终于成功了。车祸现场见(<a target="_blank" rel="noopener" href="https://gitlab.com/FSPNetwork/orion/pipelines">GitLab Pipelines</a>)</p>
+
+  </div>
+  All Content is available under the <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>
+</article>
+<br>
+<script src="https://giscus.app/client.js"
+        data-repo="Teakowa/teakowa.github.io"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkxNjQzMzc5MjQ="
+        data-category="Announcements"
+        data-category-id="DIC_kwDOCcuZBM4CP9fw"
+        data-mapping="title"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark"
+        data-lang="zh-CN"
+        data-loading="lazy"
+        crossorigin="anonymous"
+        async>
+</script>
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+        
+      </ul>
+    </div>
+
+    <div id="toc-footer" style="display: none">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%85%8D%E7%BD%AE%E6%9C%8D%E5%8A%A1%E5%99%A8"><span class="toc-number">1.</span> <span class="toc-text">配置服务器</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%89%E8%A3%85-Docker"><span class="toc-number">1.1.</span> <span class="toc-text">安装 Docker</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%85%8D%E7%BD%AE-overlay"><span class="toc-number">1.2.</span> <span class="toc-text">配置 overlay</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%85%8D%E7%BD%AE%E7%8E%AF%E5%A2%83"><span class="toc-number">2.</span> <span class="toc-text">配置环境</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%89%E8%A3%85-Docker-in-Dockers"><span class="toc-number">2.1.</span> <span class="toc-text">安装 Docker-in-Dockers</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%89%E8%A3%85-GitLab-Runner"><span class="toc-number">2.2.</span> <span class="toc-text">安装 GitLab Runner</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%B3%A8%E5%86%8C-Runner"><span class="toc-number">2.3.</span> <span class="toc-text">注册 Runner</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Building-amp-Testing"><span class="toc-number">3.</span> <span class="toc-text">Building &amp; Testing</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Cache"><span class="toc-number">3.1.</span> <span class="toc-text">Cache</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Artifacts"><span class="toc-number">3.2.</span> <span class="toc-text">Artifacts</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Build"><span class="toc-number">3.3.</span> <span class="toc-text">Build</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Test"><span class="toc-number">3.4.</span> <span class="toc-text">Test</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Build-Image"><span class="toc-number">3.5.</span> <span class="toc-text">Build Image</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#gitlab-ci-yml"><span class="toc-number">3.6.</span> <span class="toc-text">.gitlab-ci.yml</span></a></li></ol></li></ol>
+    </div>
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://teakowa.me/archives/use-docker-in-docker-with-gitlab-ci-cd/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://teakowa.me/archives/use-docker-in-docker-with-gitlab-ci-cd/&text=Use Docker-in-Docker with GitLab CI/CD"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://teakowa.me/archives/use-docker-in-docker-with-gitlab-ci-cd/&title=Use Docker-in-Docker with GitLab CI/CD"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://teakowa.me/archives/use-docker-in-docker-with-gitlab-ci-cd/&is_video=false&description=Use Docker-in-Docker with GitLab CI/CD"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Use Docker-in-Docker with GitLab CI/CD&body=Check out this article: https://teakowa.me/archives/use-docker-in-docker-with-gitlab-ci-cd/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://teakowa.me/archives/use-docker-in-docker-with-gitlab-ci-cd/&title=Use Docker-in-Docker with GitLab CI/CD"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://teakowa.me/archives/use-docker-in-docker-with-gitlab-ci-cd/&title=Use Docker-in-Docker with GitLab CI/CD"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://teakowa.me/archives/use-docker-in-docker-with-gitlab-ci-cd/&title=Use Docker-in-Docker with GitLab CI/CD"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://teakowa.me/archives/use-docker-in-docker-with-gitlab-ci-cd/&title=Use Docker-in-Docker with GitLab CI/CD"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://teakowa.me/archives/use-docker-in-docker-with-gitlab-ci-cd/&name=Use Docker-in-Docker with GitLab CI/CD&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://teakowa.me/archives/use-docker-in-docker-with-gitlab-ci-cd/&t=Use Docker-in-Docker with GitLab CI/CD"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fas fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fas fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fas fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2018-2024
+    Teakowa
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+ 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script> 
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script> 
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="far fa-clone"></i>';
+    btn += '</span>'; 
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Google Analytics -->
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-131734254-1"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-131734254-1');
+    </script>
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Umami Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>

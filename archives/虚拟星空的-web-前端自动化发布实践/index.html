@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="大家好，我是 Teakowa，本文将向大家介绍我们虚拟星空是如何基于 GitHub Action 构建 Web 前端自动化发布管道的过程，以及其中踩过的坑。 一些前提介绍我们的开发是 All in GitHub 的，如果在 2022 年要在 GitHub 上做 CI&#x2F;CD 的集成，那我无脑推荐 GitHub Action，GitHub Action 非常方便，它与 GitHub 原生集成">
+<meta property="og:type" content="article">
+<meta property="og:title" content="虚拟星空的 Web 前端自动化发布实践">
+<meta property="og:url" content="https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/index.html">
+<meta property="og:site_name" content="Teakowa">
+<meta property="og:description" content="大家好，我是 Teakowa，本文将向大家介绍我们虚拟星空是如何基于 GitHub Action 构建 Web 前端自动化发布管道的过程，以及其中踩过的坑。 一些前提介绍我们的开发是 All in GitHub 的，如果在 2022 年要在 GitHub 上做 CI&#x2F;CD 的集成，那我无脑推荐 GitHub Action，GitHub Action 非常方便，它与 GitHub 原生集成">
+<meta property="og:locale">
+<meta property="og:image" content="https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/pr.jpeg">
+<meta property="og:image" content="https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/workflow-done.png">
+<meta property="og:image" content="https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/node-modules.png">
+<meta property="og:image" content="https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/cache-not-hit.png">
+<meta property="og:image" content="https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/cache-hit.png">
+<meta property="og:image" content="https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/cloudbase.png">
+<meta property="og:image" content="https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/cloudbase-with-self-hosted-runner.png">
+<meta property="og:image" content="https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/lark.png">
+<meta property="article:published_time" content="2022-06-30T00:18:25.000Z">
+<meta property="article:modified_time" content="2024-02-24T10:54:49.090Z">
+<meta property="article:author" content="Teakowa">
+<meta property="article:tag" content="Docker">
+<meta property="article:tag" content="DevOps">
+<meta property="article:tag" content="GitHab">
+<meta property="article:tag" content="GitHub Action">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/pr.jpeg">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>虚拟星空的 Web 前端自动化发布实践</title>
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+<meta name="generator" content="Hexo 6.3.0"><link rel="alternate" href="/atom.xml" title="Teakowa" type="application/atom+xml">
+</head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="Menu"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="Menu"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="Top" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fas fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        
+        <li><a class="icon" aria-label="Next post" href="/archives/use-docker-in-docker-with-gitlab-ci-cd/"><i class="fas fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="Back to top" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="Share post" href="#"><i class="fas fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/&text=虚拟星空的 Web 前端自动化发布实践"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/&title=虚拟星空的 Web 前端自动化发布实践"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/&is_video=false&description=虚拟星空的 Web 前端自动化发布实践"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=虚拟星空的 Web 前端自动化发布实践&body=Check out this article: https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/&title=虚拟星空的 Web 前端自动化发布实践"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/&title=虚拟星空的 Web 前端自动化发布实践"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/&title=虚拟星空的 Web 前端自动化发布实践"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/&title=虚拟星空的 Web 前端自动化发布实践"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/&name=虚拟星空的 Web 前端自动化发布实践&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/&t=虚拟星空的 Web 前端自动化发布实践"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    <div id="toc">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E4%BA%9B%E5%89%8D%E6%8F%90%E4%BB%8B%E7%BB%8D"><span class="toc-number">1.</span> <span class="toc-text">一些前提介绍</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%87%AA%E5%8A%A8%E5%8C%96%E7%89%88%E6%9C%AC%E5%8F%B7"><span class="toc-number">2.</span> <span class="toc-text">自动化版本号</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%87%AA%E5%8A%A8%E5%8F%91%E5%B8%83%E6%B5%81%E7%A8%8B"><span class="toc-number">3.</span> <span class="toc-text">自动发布流程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Build"><span class="toc-number">3.1.</span> <span class="toc-text">Build</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%A1%B9%E7%9B%AE%E4%BE%9D%E8%B5%96"><span class="toc-number">3.2.</span> <span class="toc-text">项目依赖</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BC%96%E8%AF%91%E6%96%87%E4%BB%B6"><span class="toc-number">3.3.</span> <span class="toc-text">编译文件</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#TCB"><span class="toc-number">3.4.</span> <span class="toc-text">TCB</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E4%B8%8D%E4%BD%BF%E7%94%A8-TCB-%E5%AE%98%E6%96%B9%E6%8F%90%E4%BE%9B%E7%9A%84-Action%EF%BC%9F"><span class="toc-number">3.4.1.</span> <span class="toc-text">为什么不使用 TCB 官方提供的 Action？</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Kubernetes"><span class="toc-number">3.5.</span> <span class="toc-text">Kubernetes</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Static"><span class="toc-number">3.6.</span> <span class="toc-text">Static</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#CDN"><span class="toc-number">3.7.</span> <span class="toc-text">CDN</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%80%9A%E7%9F%A5"><span class="toc-number">4.</span> <span class="toc-text">通知</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BB%93%E5%B0%BE"><span class="toc-number">5.</span> <span class="toc-text">结尾</span></a></li></ol>
+    </div>
+  </span>
+</div>
+
+    
+    <div class="content index py4">
+        
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle" itemprop="name headline">
+        虚拟星空的 Web 前端自动化发布实践
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span itemprop="name">Teakowa</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2022-06-30T00:18:25.000Z" itemprop="datePublished">2022-06-30</time>
+        
+      
+    </div>
+
+
+      
+
+      
+    <div class="article-tag">
+        <i class="fas fa-tag"></i>
+        <a class="tag-link-link" href="/tags/DevOps/" rel="tag">DevOps</a>, <a class="tag-link-link" href="/tags/Docker/" rel="tag">Docker</a>, <a class="tag-link-link" href="/tags/GitHab/" rel="tag">GitHab</a>, <a class="tag-link-link" href="/tags/GitHub-Action/" rel="tag">GitHub Action</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content" itemprop="articleBody">
+    <p>大家好，我是 Teakowa，本文将向大家介绍我们虚拟星空是如何基于 GitHub Action 构建 Web 前端自动化发布管道的过程，以及其中踩过的坑。</p>
+<h2 id="一些前提介绍"><a href="#一些前提介绍" class="headerlink" title="一些前提介绍"></a>一些前提介绍</h2><p>我们的开发是 All in GitHub 的，如果在 2022 年要在 GitHub 上做 CI&#x2F;CD 的集成，那我无脑推荐 GitHub Action，GitHub Action 非常方便，它与 GitHub 原生集成，社区活跃，配置简单（也不一定），目前来说是最适合我们的。</p>
+<p>我们的发布流程相对简单，PR 合并后就会立刻发布：</p>
+<img src="/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/pr.jpeg" class="">
+
+<h2 id="自动化版本号"><a href="#自动化版本号" class="headerlink" title="自动化版本号"></a>自动化版本号</h2><p>在生产发布流程之前，还有一个步骤，就是自动生成版本号，我们所有的项目都遵循 <a target="_blank" rel="noopener" href="https://semver.org/">语义化版本</a> 规范来发布版本，并且使用 <a target="_blank" rel="noopener" href="https://github.com/semantic-release/semantic-release">semantic-release</a> 来自动化这一过程，每当我们的 Pull Request 被合并进主分支的时候，Release Workflow 就会运行，根据规则自动的新建 tag 和 release。</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="string">.github/workflows/release.yml</span></span><br><span class="line"></span><br><span class="line"><span class="attr">name:</span> <span class="string">Release</span></span><br><span class="line"></span><br><span class="line"><span class="attr">on:</span></span><br><span class="line">  <span class="attr">push:</span></span><br><span class="line">    <span class="attr">branches:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">main</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">rc</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">beta</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">alpha</span></span><br><span class="line">  <span class="attr">workflow_dispatch:</span></span><br><span class="line"></span><br><span class="line"><span class="attr">jobs:</span></span><br><span class="line">  <span class="attr">release:</span></span><br><span class="line">    <span class="attr">name:</span> <span class="string">Release</span></span><br><span class="line">    <span class="attr">uses:</span> <span class="string">XNXKTech/workflows/.github/workflows/release.yml@main</span></span><br><span class="line">    <span class="attr">secrets:</span></span><br><span class="line">      <span class="attr">CI_PAT:</span> <span class="string">$&#123;&#123;</span> <span class="string">secrets.CI_PAT</span> <span class="string">&#125;&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>这里我们使用了 GitHub 的可复用工作流（<a target="_blank" rel="noopener" href="https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-reusable-workflow">reusable workflow</a>），完整的 reusable workflow 如下：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">name:</span> <span class="string">Release</span></span><br><span class="line"></span><br><span class="line"><span class="attr">on:</span></span><br><span class="line">  <span class="attr">workflow_call:</span></span><br><span class="line">    <span class="attr">outputs:</span></span><br><span class="line">      <span class="attr">new_release_published:</span></span><br><span class="line">        <span class="attr">description:</span> <span class="string">&quot;New release published&quot;</span></span><br><span class="line">        <span class="attr">value:</span> <span class="string">$&#123;&#123;</span> <span class="string">jobs.release.outputs.new_release_published</span> <span class="string">&#125;&#125;</span></span><br><span class="line">      <span class="attr">new_release_version:</span></span><br><span class="line">        <span class="attr">description:</span> <span class="string">&quot;New release version&quot;</span></span><br><span class="line">        <span class="attr">value:</span> <span class="string">$&#123;&#123;</span> <span class="string">jobs.release.outputs.new_release_version</span> <span class="string">&#125;&#125;</span></span><br><span class="line">      <span class="attr">new_release_major_version:</span></span><br><span class="line">        <span class="attr">description:</span> <span class="string">&quot;New major version&quot;</span></span><br><span class="line">        <span class="attr">value:</span> <span class="string">$&#123;&#123;</span> <span class="string">jobs.release.outputs.new_release_major_version</span> <span class="string">&#125;&#125;</span></span><br><span class="line">      <span class="attr">new_release_minor_version:</span></span><br><span class="line">        <span class="attr">description:</span> <span class="string">&quot;New minor version&quot;</span></span><br><span class="line">        <span class="attr">value:</span> <span class="string">$&#123;&#123;</span> <span class="string">jobs.release.outputs.new_release_minor_version</span> <span class="string">&#125;&#125;</span></span><br><span class="line">      <span class="attr">new_release_patch_version:</span></span><br><span class="line">        <span class="attr">description:</span> <span class="string">&quot;New patch version&quot;</span></span><br><span class="line">        <span class="attr">value:</span> <span class="string">$&#123;&#123;</span> <span class="string">jobs.release.outputs.new_release_patch_version</span> <span class="string">&#125;&#125;</span></span><br><span class="line">      <span class="attr">new_release_channel:</span></span><br><span class="line">        <span class="attr">description:</span> <span class="string">&quot;New release channel&quot;</span></span><br><span class="line">        <span class="attr">value:</span> <span class="string">$&#123;&#123;</span> <span class="string">jobs.release.outputs.new_release_channel</span> <span class="string">&#125;&#125;</span></span><br><span class="line">      <span class="attr">new_release_notes:</span></span><br><span class="line">        <span class="attr">description:</span> <span class="string">&quot;New release notes&quot;</span></span><br><span class="line">        <span class="attr">value:</span> <span class="string">$&#123;&#123;</span> <span class="string">jobs.release.outputs.new_release_notes</span> <span class="string">&#125;&#125;</span></span><br><span class="line">      <span class="attr">last_release_version:</span></span><br><span class="line">        <span class="attr">description:</span> <span class="string">&quot;Last release version&quot;</span></span><br><span class="line">        <span class="attr">value:</span> <span class="string">$&#123;&#123;</span> <span class="string">jobs.release.outputs.last_release_version</span> <span class="string">&#125;&#125;</span></span><br><span class="line">    <span class="attr">inputs:</span></span><br><span class="line">      <span class="attr">semantic_version:</span></span><br><span class="line">        <span class="attr">required:</span> <span class="literal">false</span></span><br><span class="line">        <span class="attr">description:</span> <span class="string">Semantic</span> <span class="string">version</span></span><br><span class="line">        <span class="attr">default:</span> <span class="number">19</span></span><br><span class="line">        <span class="attr">type:</span> <span class="string">string</span></span><br><span class="line">      <span class="attr">extra_plugins:</span></span><br><span class="line">        <span class="attr">required:</span> <span class="literal">false</span></span><br><span class="line">        <span class="attr">description:</span> <span class="string">Extra</span> <span class="string">plugins</span></span><br><span class="line">        <span class="attr">default:</span> <span class="string">|</span></span><br><span class="line"><span class="string">          @semantic-release/changelog</span></span><br><span class="line"><span class="string">          @semantic-release/git</span></span><br><span class="line"><span class="string">          conventional-changelog-conventionalcommits</span></span><br><span class="line"><span class="string"></span>        <span class="attr">type:</span> <span class="string">string</span></span><br><span class="line">      <span class="attr">dry_run:</span></span><br><span class="line">        <span class="attr">required:</span> <span class="literal">false</span></span><br><span class="line">        <span class="attr">description:</span> <span class="string">Dry</span> <span class="string">run</span></span><br><span class="line">        <span class="attr">default:</span> <span class="literal">false</span></span><br><span class="line">        <span class="attr">type:</span> <span class="string">string</span></span><br><span class="line">    <span class="attr">secrets:</span></span><br><span class="line">      <span class="attr">CI_PAT:</span></span><br><span class="line">        <span class="attr">required:</span> <span class="literal">false</span></span><br><span class="line">      <span class="attr">GH_TOKEN:</span></span><br><span class="line">        <span class="attr">description:</span> <span class="string">&#x27;Personal access token passed from the caller workflow&#x27;</span></span><br><span class="line">        <span class="attr">required:</span> <span class="literal">false</span></span><br><span class="line">      <span class="attr">NPM_TOKEN:</span></span><br><span class="line">        <span class="attr">required:</span> <span class="literal">true</span></span><br><span class="line"></span><br><span class="line"><span class="attr">env:</span></span><br><span class="line">  <span class="attr">GITHUB_TOKEN:</span> <span class="string">$&#123;&#123;</span> <span class="string">secrets.GH_TOKEN</span> <span class="string">==</span> <span class="string">&#x27;&#x27;</span> <span class="string">&amp;&amp;</span> <span class="string">secrets.CI_PAT</span> <span class="string">||</span> <span class="string">secrets.GH_TOKEN</span> <span class="string">&#125;&#125;</span></span><br><span class="line">  <span class="attr">GH_TOKEN:</span> <span class="string">$&#123;&#123;</span> <span class="string">secrets.GH_TOKEN</span> <span class="string">==</span> <span class="string">&#x27;&#x27;</span> <span class="string">&amp;&amp;</span> <span class="string">secrets.CI_PAT</span> <span class="string">||</span> <span class="string">secrets.GH_TOKEN</span> <span class="string">&#125;&#125;</span></span><br><span class="line">  <span class="attr">token:</span> <span class="string">$&#123;&#123;</span> <span class="string">secrets.GH_TOKEN</span> <span class="string">==</span> <span class="string">&#x27;&#x27;</span> <span class="string">&amp;&amp;</span> <span class="string">secrets.CI_PAT</span> <span class="string">||</span> <span class="string">secrets.GH_TOKEN</span> <span class="string">&#125;&#125;</span></span><br><span class="line"></span><br><span class="line"><span class="attr">jobs:</span></span><br><span class="line">  <span class="attr">release:</span></span><br><span class="line">    <span class="attr">name:</span> <span class="string">Release</span></span><br><span class="line">    <span class="attr">runs-on:</span> <span class="string">ubuntu-latest</span></span><br><span class="line">    <span class="attr">outputs:</span></span><br><span class="line">      <span class="attr">new_release_published:</span> <span class="string">$&#123;&#123;</span> <span class="string">steps.semantic.outputs.new_release_published</span> <span class="string">&#125;&#125;</span></span><br><span class="line">      <span class="attr">new_release_version:</span> <span class="string">$&#123;&#123;</span> <span class="string">steps.semantic.outputs.new_release_version</span> <span class="string">&#125;&#125;</span></span><br><span class="line">      <span class="attr">new_release_major_version:</span> <span class="string">$&#123;&#123;</span> <span class="string">steps.semantic.outputs.new_release_major_version</span> <span class="string">&#125;&#125;</span></span><br><span class="line">      <span class="attr">new_release_minor_version:</span> <span class="string">$&#123;&#123;</span> <span class="string">steps.semantic.outputs.new_release_minor_version</span> <span class="string">&#125;&#125;</span></span><br><span class="line">      <span class="attr">new_release_patch_version:</span> <span class="string">$&#123;&#123;</span> <span class="string">steps.semantic.outputs.new_release_patch_version</span> <span class="string">&#125;&#125;</span></span><br><span class="line">      <span class="attr">new_release_channel:</span> <span class="string">$&#123;&#123;</span> <span class="string">steps.semantic.outputs.new_release_channel</span> <span class="string">&#125;&#125;</span></span><br><span class="line">      <span class="attr">new_release_notes:</span> <span class="string">$&#123;&#123;</span> <span class="string">steps.semantic.outputs.new_release_notes</span> <span class="string">&#125;&#125;</span></span><br><span class="line">      <span class="attr">last_release_version:</span> <span class="string">$&#123;&#123;</span> <span class="string">steps.semantic.outputs.last_release_version</span> <span class="string">&#125;&#125;</span></span><br><span class="line">    <span class="attr">steps:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Checkout</span></span><br><span class="line">        <span class="attr">uses:</span> <span class="string">actions/checkout@v3.0.2</span></span><br><span class="line">        <span class="attr">with:</span></span><br><span class="line">          <span class="attr">persist-credentials:</span> <span class="literal">false</span></span><br><span class="line">          <span class="attr">fetch-depth:</span> <span class="number">0</span></span><br><span class="line"></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Use</span> <span class="string">remote</span> <span class="string">configuration</span></span><br><span class="line">        <span class="attr">if:</span> <span class="string">contains(fromJson(&#x27;[&quot;XNXKTech&quot;,</span> <span class="string">&quot;StarUbiquitous&quot;</span><span class="string">,</span> <span class="string">&quot;terraform-xnxk-modules&quot;</span><span class="string">]&#x27;),</span> <span class="string">github.event.repository.owner.name)</span> <span class="string">==</span> <span class="literal">true</span></span><br><span class="line">        <span class="attr">run:</span> <span class="string">|</span></span><br><span class="line"><span class="string">          wget -qO- https://raw.githubusercontent.com/XNXKTech/workflows/main/release/.releaserc.json &gt; .releaserc.json</span></span><br><span class="line"><span class="string"></span>      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Semantic</span> <span class="string">Release</span></span><br><span class="line">        <span class="attr">uses:</span> <span class="string">cycjimmy/semantic-release-action@v2</span></span><br><span class="line">        <span class="attr">id:</span> <span class="string">semantic</span></span><br><span class="line">        <span class="attr">with:</span></span><br><span class="line">          <span class="attr">semantic_version:</span> <span class="string">$&#123;&#123;</span> <span class="string">inputs.semantic_version</span> <span class="string">&#125;&#125;</span></span><br><span class="line">          <span class="attr">extra_plugins:</span> <span class="string">|</span></span><br><span class="line"><span class="string">            @semantic-release/changelog</span></span><br><span class="line"><span class="string">            @semantic-release/git</span></span><br><span class="line"><span class="string">            conventional-changelog-conventionalcommits</span></span><br><span class="line"><span class="string"></span>          <span class="attr">dry_run:</span> <span class="string">$&#123;&#123;</span> <span class="string">inputs.dry_run</span> <span class="string">&#125;&#125;</span></span><br><span class="line">        <span class="attr">env:</span></span><br><span class="line">          <span class="attr">GITHUB_TOKEN:</span> <span class="string">$&#123;&#123;</span> <span class="string">env.GH_TOKEN</span> <span class="string">&#125;&#125;</span></span><br><span class="line">          <span class="attr">NPM_TOKEN:</span> <span class="string">$&#123;&#123;</span> <span class="string">secrets.NPM_TOKEN</span> <span class="string">&#125;&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>通过可复用工作流，我们可以只维护一个 workflow 并让所有的代码仓库复用，降低我们的维护成本，毕竟代码仓库多起来以后一个个去改 workflow 是很痛苦的事情……<br>这里还统一了各个仓库使用的 <code>.releaserc.json</code>，使得我们进一步降低维护成本。<br>更多关于我们可复用工作流的实践有机会的话也会发布出来，欢迎关注。</p>
+<h2 id="自动发布流程"><a href="#自动发布流程" class="headerlink" title="自动发布流程"></a>自动发布流程</h2><p>先上完整的图：</p>
+<img src="/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/workflow-done.png" class="">
+
+<p>我们的 Production workflow 会被 release 事件触发，这个过程是由 GitHub Webhook 完成的，不需要我们关注，但同时我们还使用了 <code>workflow_dispatch</code> 事件，允许我们手动运行 Production workflow：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="string">.github/workflows/production.yml</span></span><br><span class="line"></span><br><span class="line"><span class="attr">name:</span> <span class="string">Production</span></span><br><span class="line"></span><br><span class="line"><span class="attr">on:</span></span><br><span class="line">  <span class="attr">release:</span></span><br><span class="line">    <span class="attr">types:</span> [ <span class="string">published</span> ]</span><br><span class="line">  <span class="attr">workflow_dispatch:</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="Build"><a href="#Build" class="headerlink" title="Build"></a>Build</h3><p>首先是 Build 部分，这一部分需要编译出前端静态资源文件交给后续的 jobs 处理：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">jobs:</span></span><br><span class="line">  <span class="attr">build:</span></span><br><span class="line">    <span class="attr">name:</span> <span class="string">Build</span></span><br><span class="line">    <span class="attr">runs-on:</span> <span class="string">ubuntu-latest</span></span><br><span class="line">    <span class="attr">timeout-minutes:</span> <span class="number">10</span></span><br><span class="line">    <span class="attr">steps:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Split</span> <span class="string">string</span></span><br><span class="line">        <span class="attr">uses:</span> <span class="string">jungwinter/split@v2</span></span><br><span class="line">        <span class="attr">id:</span> <span class="string">split</span></span><br><span class="line">        <span class="attr">with:</span></span><br><span class="line">          <span class="attr">separator:</span> <span class="string">&#x27;/&#x27;</span></span><br><span class="line">          <span class="attr">msg:</span> <span class="string">$&#123;&#123;</span> <span class="string">github.ref</span> <span class="string">&#125;&#125;</span></span><br><span class="line"></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Checkout</span> <span class="string">$&#123;&#123;</span> <span class="string">steps.split.outputs._2</span> <span class="string">&#125;&#125;</span></span><br><span class="line">        <span class="attr">uses:</span> <span class="string">actions/checkout@v3</span></span><br><span class="line">        <span class="attr">with:</span></span><br><span class="line">          <span class="attr">ref:</span> <span class="string">$&#123;&#123;</span> <span class="string">steps.split.outputs._2</span> <span class="string">&#125;&#125;</span></span><br><span class="line"></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Setup</span> <span class="string">Node</span> <span class="string">$&#123;&#123;</span> <span class="string">matrix.node</span> <span class="string">&#125;&#125;</span></span><br><span class="line">        <span class="attr">uses:</span> <span class="string">actions/setup-node@v3.3.0</span></span><br><span class="line">        <span class="attr">with:</span></span><br><span class="line">          <span class="attr">node-version:</span> <span class="string">$&#123;&#123;</span> <span class="string">matrix.node</span> <span class="string">&#125;&#125;</span></span><br><span class="line">          <span class="attr">cache:</span> <span class="string">npm</span></span><br><span class="line"></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Setup</span> <span class="string">yarn</span></span><br><span class="line">        <span class="attr">run:</span> <span class="string">npm</span> <span class="string">install</span> <span class="string">-g</span> <span class="string">yarn</span></span><br><span class="line"></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Setup</span> <span class="string">Nodejs</span> <span class="string">with</span> <span class="string">yarn</span> <span class="string">caching</span></span><br><span class="line">        <span class="attr">uses:</span> <span class="string">actions/setup-node@v3.3.0</span></span><br><span class="line">        <span class="attr">with:</span></span><br><span class="line">          <span class="attr">node-version:</span> <span class="string">$&#123;&#123;</span> <span class="string">matrix.node</span> <span class="string">&#125;&#125;</span></span><br><span class="line">          <span class="attr">cache:</span> <span class="string">yarn</span></span><br><span class="line"></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Cache</span> <span class="string">dependencies</span></span><br><span class="line">        <span class="attr">uses:</span> <span class="string">actions/cache@v3.0.4</span></span><br><span class="line">        <span class="attr">id:</span> <span class="string">node-modules-cache</span></span><br><span class="line">        <span class="attr">with:</span></span><br><span class="line">          <span class="attr">path:</span> <span class="string">|</span></span><br><span class="line"><span class="string">            node_modules</span></span><br><span class="line"><span class="string"></span>          <span class="attr">key:</span> <span class="string">$&#123;&#123;</span> <span class="string">runner.os</span> <span class="string">&#125;&#125;-yarn-$&#123;&#123;</span> <span class="string">hashFiles(&#x27;**/yarn.lock&#x27;)</span> <span class="string">&#125;&#125;</span></span><br><span class="line">          <span class="attr">restore-keys:</span> <span class="string">|</span></span><br><span class="line"><span class="string">            $&#123;&#123; runner.os &#125;&#125;-yarn</span></span><br><span class="line"><span class="string"></span></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Install</span> <span class="string">package.json</span> <span class="string">dependencies</span> <span class="string">with</span> <span class="string">Yarn</span></span><br><span class="line">        <span class="attr">if:</span> <span class="string">steps.node-modules-cache.outputs.cache-hit</span> <span class="type">!=</span> <span class="string">&#x27;true&#x27;</span></span><br><span class="line">        <span class="attr">run:</span> <span class="string">yarn</span> <span class="string">--frozen-lockfile</span></span><br><span class="line">        <span class="attr">env:</span></span><br><span class="line">          <span class="attr">PUPPETEER_SKIP_CHROMIUM_DOWNLOAD:</span> <span class="literal">true</span></span><br><span class="line">          <span class="attr">HUSKY_SKIP_INSTALL:</span> <span class="literal">true</span></span><br><span class="line"></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Cache</span> <span class="string">build</span></span><br><span class="line">        <span class="attr">uses:</span> <span class="string">actions/cache@v3.0.4</span></span><br><span class="line">        <span class="attr">id:</span> <span class="string">build-cache</span></span><br><span class="line">        <span class="attr">with:</span></span><br><span class="line">          <span class="attr">path:</span> <span class="string">|</span></span><br><span class="line"><span class="string">            build</span></span><br><span class="line"><span class="string"></span>          <span class="attr">key:</span> <span class="string">$&#123;&#123;</span> <span class="string">runner.os</span> <span class="string">&#125;&#125;-build-$&#123;&#123;</span> <span class="string">github.sha</span> <span class="string">&#125;&#125;</span></span><br><span class="line"></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Build</span></span><br><span class="line">        <span class="attr">if:</span> <span class="string">steps.build-cache.outputs.cache-hit</span> <span class="type">!=</span> <span class="string">&#x27;true&#x27;</span></span><br><span class="line">        <span class="attr">run:</span> <span class="string">yarn</span> <span class="string">build</span></span><br></pre></td></tr></table></figure>
+
+<p>这里有几个地方可以展开介绍，我们的 Checkout 部分和常见的不太一样，常见的 Checkout 可能就一条：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="bullet">-</span> <span class="attr">uses:</span> <span class="string">actions/checkout@v2</span></span><br></pre></td></tr></table></figure>
+
+<p>但我们遇到了一个小问题，checkout 默认情况下会使用代码仓库中设置的 <code>default branch</code> 而我们一些偏 CD 的 workflow 都是 <code>workflow_dispatch</code> 与其他的如 <code>push</code>、<code>release</code> 事件共存的，我们不能使用默认参数，必须传一个 ref 进去，确保 action 会按照我们的期望 checkout，我们尝试过对 <code>release</code> 做支持：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Get</span> <span class="string">the</span> <span class="string">version</span></span><br><span class="line">  <span class="attr">id:</span> <span class="string">get_version</span></span><br><span class="line">  <span class="attr">run:</span> <span class="string">echo</span> <span class="string">::set-output</span> <span class="string">name=VERSION::$&#123;GITHUB_REF/refs\/tags\//&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>但发现它在其他的事件中不起作用，因为其他事件的 webhook playload 中并没有 <code>/refs/tags</code>，这会导致当 webhook event 是 <code>release</code> 以外的其他事件时获取不到我们期望的 ref。</p>
+<p><code>$GITHUB_REF</code> 是有的，但却不是我们期望的格式，因为根据不同的事件，<code>$GITHUB_REF</code> 的内容也不一样。</p>
+<p>比如 <code>workflow_dispatch</code> 支持选择 branch 和 tag 来手动运行，那么 <code>$GITHUB_REF</code> 可能是 <code>refs/heads/main</code>，也可能是 <code>refs/tags/v1.111.1-beta.4</code>。</p>
+<p>所以最后我决定粗暴一点，既然不管任何事件 <code>$GITHUB_REF</code> 都会存在，那就直接分割它：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Split</span> <span class="string">string</span></span><br><span class="line">  <span class="attr">uses:</span> <span class="string">jungwinter/split@v2</span></span><br><span class="line">  <span class="attr">id:</span> <span class="string">split</span></span><br><span class="line">  <span class="attr">with:</span></span><br><span class="line">    <span class="attr">separator:</span> <span class="string">&#x27;/&#x27;</span></span><br><span class="line">    <span class="attr">msg:</span> <span class="string">$&#123;&#123;</span> <span class="string">github.ref</span> <span class="string">&#125;&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>直接取最后的值，是 <code>main</code> 还是 <code>v1.111.1</code> 根本就不重要，因为始终能按照我们的期望 checkout 出正确的 ref。</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Checkout</span> <span class="string">$&#123;&#123;</span> <span class="string">steps.split.outputs._2</span> <span class="string">&#125;&#125;</span></span><br><span class="line">  <span class="attr">uses:</span> <span class="string">actions/checkout@v3</span></span><br><span class="line">  <span class="attr">with:</span></span><br><span class="line">    <span class="attr">ref:</span> <span class="string">$&#123;&#123;</span> <span class="string">steps.split.outputs._2</span> <span class="string">&#125;&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>接下来是缓存与编译步骤，由于 Build 部分只负责编译，所以只需要将 Build 的结果 cache 起来，通过 action cache 让后续的 workflow 复用就可以了。<br>如何高效利用缓存是很重要的事情，在 Build 过程中，有两个使用缓存的关键位置：</p>
+<ol>
+<li>项目依赖</li>
+<li>编译文件</li>
+</ol>
+<h3 id="项目依赖"><a href="#项目依赖" class="headerlink" title="项目依赖"></a>项目依赖</h3><p>众所周知，前端项目的依赖是宇宙难题。</p>
+<img src="/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/node-modules.png" class="">
+
+<p>我们不能在每一次的 Build 都重新安装项目依赖，那会导致整个 Workflow 执行非常的漫长（账单也会很长）<br>所以 Build workflow 中设置了项目依赖缓存：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Cache</span> <span class="string">dependencies</span></span><br><span class="line">  <span class="attr">uses:</span> <span class="string">actions/cache@v3.0.4</span></span><br><span class="line">  <span class="attr">id:</span> <span class="string">node-modules-cache</span></span><br><span class="line">  <span class="attr">with:</span></span><br><span class="line">    <span class="attr">path:</span> <span class="string">|</span></span><br><span class="line"><span class="string">      node_modules</span></span><br><span class="line"><span class="string"></span>    <span class="attr">key:</span> <span class="string">$&#123;&#123;</span> <span class="string">runner.os</span> <span class="string">&#125;&#125;-yarn-$&#123;&#123;</span> <span class="string">hashFiles(&#x27;**/yarn.lock&#x27;)</span> <span class="string">&#125;&#125;</span></span><br><span class="line">    <span class="attr">restore-keys:</span> <span class="string">|</span></span><br><span class="line"><span class="string">      $&#123;&#123; runner.os &#125;&#125;-yarn</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Install</span> <span class="string">package.json</span> <span class="string">dependencies</span> <span class="string">with</span> <span class="string">Yarn</span></span><br><span class="line">  <span class="attr">if:</span> <span class="string">steps.node-modules-cache.outputs.cache-hit</span> <span class="type">!=</span> <span class="string">&#x27;true&#x27;</span></span><br><span class="line">  <span class="attr">run:</span> <span class="string">yarn</span> <span class="string">--frozen-lockfile</span></span><br><span class="line">  <span class="attr">env:</span></span><br><span class="line">    <span class="attr">PUPPETEER_SKIP_CHROMIUM_DOWNLOAD:</span> <span class="literal">true</span></span><br><span class="line">    <span class="attr">HUSKY_SKIP_INSTALL:</span> <span class="literal">true</span></span><br></pre></td></tr></table></figure>
+
+<p>简单介绍下 <a target="_blank" rel="noopener" href="https://github.com/actions/cache">actions&#x2F;cache</a> 这个神奇(?)的东西：</p>
+<ol>
+<li>每个仓库 10 GB 缓存容量</li>
+<li>缓存 Key 数量无限</li>
+<li>每个缓存 Key 最短有效期 7 天（如果 7 天内没有任何访问将被删除）</li>
+<li>如果超过了容量限制，GitHub 会保存最新的缓存，删除以前的缓存</li>
+</ol>
+<p>这是什么，活菩萨在世（不是）利用这些规则我们理论上可以在多个 workflow 中无限复用一个缓存！</p>
+<p>通过设置 cache 的 <code>path</code>、<code>key</code>、<code>restore-keys</code> 来更大限度的复用项目依赖缓存，其中 <code>key</code> 和 <code>restore-keys</code> 非常关键：</p>
+<ul>
+<li><code>key</code> - 用于恢复和保存缓存的密钥</li>
+<li><code>restore-keys</code> - 如果 key 没有发生缓存命中，它会按提供的恢复密钥去按顺序查找和恢复缓存，这个时候 <code>cache-hit</code> 会返回 <code>false</code>.</li>
+</ul>
+<p>key 是保证我们能够最大限度利用缓存的基础，对于 yarn 或 npm 来说，只需要对 lock 文件进行哈希就可以了，设置 cache key 为：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="string">$&#123;&#123;</span> <span class="string">runner.os</span> <span class="string">&#125;&#125;-yarn-$&#123;&#123;</span> <span class="string">hashFiles(&#x27;**/yarn.lock&#x27;)</span> <span class="string">&#125;&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>如果 lock 的文件哈希一致，会直接命中缓存，但如果文件哈希不一致，没有命中缓存，这个时候我们就没有 <code>node_modules</code> 了吗？</p>
+<p>并不会，通过设置 <code>restore-keys</code> 为 <code>$&#123;&#123; runner.os &#125;&#125;-yarn</code>，即使 key 没有命中缓存，我们仍然可以通过上一个 key 来恢复大部分缓存：</p>
+<img src="/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/cache-not-hit.png" class="">
+
+<p>此时 <code>cache-hit</code> 返回 <code>false</code>，没有命中缓存，所以我们执行 yarn 安装依赖，但只会安装变更的依赖，这样可以确保即使没有命中缓存，我们仍然不需要从头到尾重新安装所有的依赖。</p>
+<p>这两个 step 存在于我们所有项目的 CI 流程中（根据语言细节不一样，但本质还是确保多个 workflow 复用缓存），比如说 Build&#x2F;ESLint&#x2F;Test workflow 里面都会包含这两个 step，而在 PR Review 环节就会执行这些 CI workflow，基本上项目依赖缓存是来自于 PR 的。</p>
+<p>当缓存命中时 workflow 就会直接跳过下面的依赖安装步骤，直接将 <code>node_modules</code> 恢复到项目目录：</p>
+<img src="/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/cache-hit.png" class="">
+
+<p>并且我们是周期性的更新依赖，单个依赖缓存我们可以用非常久，这样我们就得到了一个高度可复用的项目依赖缓存（和短的账单）</p>
+<h3 id="编译文件"><a href="#编译文件" class="headerlink" title="编译文件"></a>编译文件</h3><p>项目的静态资源缓存也是一个问题，我们希望像项目依赖缓存一样，一次编译多线复用，来省掉那些不必要的构建时间，所以这里我们针对编译也使用了缓存：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Cache</span> <span class="string">build</span></span><br><span class="line">  <span class="attr">uses:</span> <span class="string">actions/cache@v3.0.4</span></span><br><span class="line">  <span class="attr">id:</span> <span class="string">build-cache</span></span><br><span class="line">  <span class="attr">with:</span></span><br><span class="line">    <span class="attr">path:</span> <span class="string">|</span></span><br><span class="line"><span class="string">      build</span></span><br><span class="line"><span class="string"></span>    <span class="attr">key:</span> <span class="string">$&#123;&#123;</span> <span class="string">runner.os</span> <span class="string">&#125;&#125;-build-$&#123;&#123;</span> <span class="string">github.sha</span> <span class="string">&#125;&#125;</span></span><br><span class="line"></span><br><span class="line"><span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Build</span></span><br><span class="line">  <span class="attr">if:</span> <span class="string">steps.build-cache.outputs.cache-hit</span> <span class="type">!=</span> <span class="string">&#x27;true&#x27;</span></span><br><span class="line">  <span class="attr">run:</span> <span class="string">yarn</span> <span class="string">build</span></span><br></pre></td></tr></table></figure>
+
+<p>不过这里没有设置 <code>restore-keys</code>，因为编译环节每一次都可能存在新的变更导致编译出来的文件名不一致，我们没办法像依赖缓存那样使用一个 lock 来判断，这里直接放弃 <code>restore-keys</code> ，使用 Git SHA 来作为编译缓存的 key，只确保后续的 workflow 以及 workflow re-run 的时候能利用编译缓存就行了。</p>
+<p>至此 Build 的使命就完成了，接下来是部署的环节。</p>
+<h3 id="TCB"><a href="#TCB" class="headerlink" title="TCB"></a>TCB</h3><p>我们的前端项目全部都基于 TCB（Tencent Cloudbase）和 Kubernetes 部署，TCB 负责主要的用户访问，Kubernetes 担任热备份的角色，当我们发现 TCB 版本出现问题的时候会直接通过 CDN 节点切到 Kubernetes 上，尽量保证用户访问不受影响。</p>
+<p>TCB 的部署使用了可复用工作流（<a target="_blank" rel="noopener" href="https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-reusable-workflow">reusable workflow</a>），还使用了我们自建的 GitHub Action Runner：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">cloudbase:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">TCB</span></span><br><span class="line">  <span class="attr">needs:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">build</span></span><br><span class="line">  <span class="attr">uses:</span> <span class="string">XNXKTech/workflows/.github/workflows/cloudbase.yml@main</span></span><br><span class="line">  <span class="attr">with:</span></span><br><span class="line">    <span class="attr">runs-on:</span> <span class="string">&quot;[&#x27;self-hosted&#x27;]&quot;</span></span><br><span class="line">    <span class="attr">environment:</span> <span class="string">Production</span></span><br><span class="line">    <span class="attr">environment_url:</span> <span class="string">https://demo.xnxktech.net</span></span><br><span class="line">  <span class="attr">secrets:</span></span><br><span class="line">    <span class="attr">SECRET_ID:</span> <span class="string">$&#123;&#123;</span> <span class="string">secrets.TCB_SECRET_ID</span> <span class="string">&#125;&#125;</span></span><br><span class="line">    <span class="attr">SECRET_KEY:</span> <span class="string">$&#123;&#123;</span> <span class="string">secrets.TCB_SECRET_KEY</span> <span class="string">&#125;&#125;</span></span><br><span class="line">    <span class="attr">ENV_ID:</span> <span class="string">$&#123;&#123;</span> <span class="string">secrets.ENV_ID</span> <span class="string">&#125;&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>关于 TCB 的可复用工作流可以 <a target="_blank" rel="noopener" href="https://github.com/XNXKTech/workflows/blob/main/.github/workflows/cloudbase.yml">在这里</a> 看细节部分，这里就不再全部展示出来了。</p>
+<h4 id="为什么不使用-TCB-官方提供的-Action？"><a href="#为什么不使用-TCB-官方提供的-Action？" class="headerlink" title="为什么不使用 TCB 官方提供的 Action？"></a>为什么不使用 TCB 官方提供的 Action？</h4><p>前面提到我们使用 GitHub Action 的原因之一，社区活跃，GitHub 上有非常多的 Action 可以直接使用，甚至还能通过 Docker 的方式使用 Action。<br>TCB 官方提供了一个 <a target="_blank" rel="noopener" href="https://github.com/TencentCloudBase/cloudbase-action">cloudbase-action</a> 来实现 TCB 的部署。但我们在使用中发现了一些问题：</p>
+<ol>
+<li>每一次执行都需要下载 <code>@cloudbase/cli</code><blockquote>
+<p>可以但没必要，这个时间我不想花</p>
+</blockquote>
+</li>
+<li>部署失败但是不报错<blockquote>
+<img src="/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/cloudbase.png" class=""></blockquote>
+</li>
+<li>有时候部署非常非常慢<blockquote>
+<p>这个就不怪 TCB 了，GitHub Action 的机器都在北美，推国内白天还好，晚上不知道是国际网络限速还是咋的，我们有一次发布等了半个小时还没有推到国内……</p>
+</blockquote>
+</li>
+</ol>
+<p>以上问题是我们自己封装 TCB Action 的原因，我们的解决方案是在香港自建 Runner 以及把 TCB 内置到 Runner 系统镜像内来保证 TCB 的部署效率</p>
+<img src="/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/cloudbase-with-self-hosted-runner.png" class="">
+
+<p>这样一来 TCB 的部署时间可以控制在 1 分钟左右</p>
+<h3 id="Kubernetes"><a href="#Kubernetes" class="headerlink" title="Kubernetes"></a>Kubernetes</h3><figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">deploy:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">Kubernetes</span></span><br><span class="line">  <span class="attr">needs:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">build</span></span><br><span class="line">  <span class="attr">uses:</span> <span class="string">XNXKTech/workflows/.github/workflows/deploy-k8s.yml@main</span></span><br><span class="line">  <span class="attr">with:</span></span><br><span class="line">    <span class="attr">environment:</span> <span class="string">Production</span></span><br><span class="line">    <span class="attr">environment_url:</span> <span class="string">https://prod.example.com</span></span><br><span class="line">  <span class="attr">secrets:</span></span><br><span class="line">    <span class="attr">K8S_CONFIG:</span> <span class="string">$&#123;&#123;</span> <span class="string">secrets.K8S_CONFIG</span> <span class="string">&#125;&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>我们的 Kubernetes 部署也是可复用工作流，由于我们的 Docker 镜像编译是另外的工作流（另外的价钱），这里不展开了。</p>
+<h3 id="Static"><a href="#Static" class="headerlink" title="Static"></a>Static</h3><p>我们的前端项目都涉及到大量的 js&#x2F;css&#x2F;image 等静态文件，我们会单独使用一个 CDN 域名去部署：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">static:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">Static</span></span><br><span class="line">  <span class="attr">needs:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">build</span></span><br><span class="line">  <span class="attr">uses:</span> <span class="string">XNXKTech/workflows/.github/workflows/uptoc.yml@main</span></span><br><span class="line">  <span class="attr">with:</span></span><br><span class="line">    <span class="attr">cache_dir:</span> <span class="string">build</span></span><br><span class="line">    <span class="attr">cache_key:</span> <span class="string">build</span></span><br><span class="line">    <span class="attr">dist:</span> <span class="string">build/static</span></span><br><span class="line">    <span class="attr">saveroot:</span> <span class="string">./static</span></span><br><span class="line">    <span class="attr">bucket:</span> <span class="string">qc-frontend-assets-***</span></span><br><span class="line">  <span class="attr">secrets:</span></span><br><span class="line">    <span class="attr">UPTOC_UPLOADER_AK:</span> <span class="string">$&#123;&#123;</span> <span class="string">secrets.TENCENTCLOUD_COS_SECRET_ID</span> <span class="string">&#125;&#125;</span></span><br><span class="line">    <span class="attr">UPTOC_UPLOADER_SK:</span> <span class="string">$&#123;&#123;</span> <span class="string">secrets.TENCENTCLOUD_COS_SECRET_KEY</span> <span class="string">&#125;&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>毫不例外的这里也是可复用工作流，我们使用 <a target="_blank" rel="noopener" href="https://github.com/saltbo/uptoc">saltbo&#x2F;uptoc</a> 提供的 Action 来将这些静态文件上传到对象储存中，提供给 CDN 访问。</p>
+<h3 id="CDN"><a href="#CDN" class="headerlink" title="CDN"></a>CDN</h3><p>当 TCB&#x2F;Kubernetes&#x2F;Static 都执行成功后，会进入到 CDN 刷新的步骤，我们使用的是 Serverless 提供的 CDN 组件：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">app:</span> <span class="string">app</span></span><br><span class="line"><span class="attr">stage:</span> <span class="string">prod</span></span><br><span class="line"><span class="attr">component:</span> <span class="string">cdn</span></span><br><span class="line"><span class="attr">name:</span> <span class="string">cdn</span></span><br><span class="line"></span><br><span class="line"><span class="attr">inputs:</span></span><br><span class="line">  <span class="attr">area:</span> <span class="string">mainland</span></span><br><span class="line">  <span class="attr">domain:</span> <span class="string">prod.example.com</span></span><br><span class="line">  <span class="attr">origin:</span></span><br><span class="line">    <span class="attr">origins:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">prod-example.tcloudbaseapp.com</span></span><br><span class="line">    <span class="attr">originType:</span> <span class="string">domain</span></span><br><span class="line">    <span class="attr">originPullProtocol:</span> <span class="string">http</span></span><br><span class="line">  <span class="attr">onlyRefresh:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">refreshCdn:</span></span><br><span class="line">    <span class="attr">urls:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">https://prod.example.com/</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">cdn:</span></span><br><span class="line">  <span class="attr">runs-on:</span> <span class="string">ubuntu-latest</span></span><br><span class="line">  <span class="attr">needs:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">deploy</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">cloudbase</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">static</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">Refresh</span> <span class="string">CDN</span></span><br><span class="line">  <span class="attr">steps:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Checkout</span></span><br><span class="line">      <span class="attr">uses:</span> <span class="string">actions/checkout@v2.4.0</span></span><br><span class="line"></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Setup</span> <span class="string">Serverless</span></span><br><span class="line">      <span class="attr">uses:</span> <span class="string">teakowa/setup-serverless@v2</span></span><br><span class="line">      <span class="attr">with:</span></span><br><span class="line">        <span class="attr">provider:</span> <span class="string">tencent</span></span><br><span class="line">      <span class="attr">env:</span></span><br><span class="line">        <span class="attr">TENCENT_APPID:</span> <span class="string">$&#123;&#123;</span> <span class="string">secrets.TENCENTCLOUD_APP_ID</span> <span class="string">&#125;&#125;</span></span><br><span class="line">        <span class="attr">TENCENT_SECRET_ID:</span> <span class="string">$&#123;&#123;</span> <span class="string">secrets.TENCENTCLOUD_SLS_SECRET_ID</span> <span class="string">&#125;&#125;</span></span><br><span class="line">        <span class="attr">TENCENT_SECRET_KEY:</span> <span class="string">$&#123;&#123;</span> <span class="string">secrets.TENCENTCLOUD_SLS_SECRET_KEY&#125;&#125;</span></span><br><span class="line">        <span class="attr">SERVERLESS_PLATFORM_VENDOR:</span> <span class="string">tencent</span></span><br><span class="line"></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Refresh</span> <span class="string">CDN</span></span><br><span class="line">      <span class="attr">run:</span> <span class="string">sls</span> <span class="string">deploy</span></span><br></pre></td></tr></table></figure>
+
+<p>通过 Serverless 定义 CDN 来对我们的 CDN 进行「仅刷新」的操作，以保证新版本会尽快的发布到用户端。</p>
+<h2 id="通知"><a href="#通知" class="headerlink" title="通知"></a>通知</h2><p>当前面的 Workflow 全部执行成功后，由最后一个 Workflow 将整个 Production 的执行结果通过飞书机器人发送到我们的频道里面：</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">notification:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">Deploy</span> <span class="string">notification</span></span><br><span class="line">  <span class="attr">needs:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">cdn</span></span><br><span class="line">  <span class="attr">uses:</span> <span class="string">XNXKTech/workflows/.github/workflows/lark-notification.yml@main</span></span><br><span class="line">  <span class="attr">with:</span></span><br><span class="line">    <span class="attr">stage:</span> <span class="string">Production</span></span><br><span class="line">  <span class="attr">secrets:</span></span><br><span class="line">    <span class="attr">LARK_WEBHOOK_URL:</span> <span class="string">$&#123;&#123;</span> <span class="string">secrets.SERVICE_UPDATES_ECHO_LARK_BOT_HOOK</span> <span class="string">&#125;&#125;</span></span><br></pre></td></tr></table></figure>
+
+<img src="/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/lark.png" class="">
+
+<p>到这里，我们整个 Production 的发布算是完成了。</p>
+<h2 id="结尾"><a href="#结尾" class="headerlink" title="结尾"></a>结尾</h2><p>我们在前端发布的实践就是这样了，目前我们所有前端项目的上线发布最多在 5 分钟左右（包含 CDN 节点刷新），让用户更快的看到我们的新变更的同时，通过可复用工作流统一所有前端项目的 CI&#x2F;CD 流程也降低了团队的维护成本。</p>
+<p>不过我个人还是觉得有些小问题：</p>
+<ul>
+<li>我认为整个 Production workflow 执行效率还可以再提升，比如可以把自建的 Runner 覆盖到更多的 job 中，以及把我们强依赖的一些 action 集成到自建的 runner image 中，省掉 action setup 的时间。</li>
+<li>工程师对线上环境的干预不足，比如线上发生问题需要切流量&#x2F;版本的时候，不能方便的通过 GitHub Action 去操作</li>
+</ul>
+
+  </div>
+  All Content is available under the <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>
+</article>
+<br>
+<script src="https://giscus.app/client.js"
+        data-repo="Teakowa/teakowa.github.io"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkxNjQzMzc5MjQ="
+        data-category="Announcements"
+        data-category-id="DIC_kwDOCcuZBM4CP9fw"
+        data-mapping="title"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark"
+        data-lang="zh-CN"
+        data-loading="lazy"
+        crossorigin="anonymous"
+        async>
+</script>
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+        
+      </ul>
+    </div>
+
+    <div id="toc-footer" style="display: none">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E4%BA%9B%E5%89%8D%E6%8F%90%E4%BB%8B%E7%BB%8D"><span class="toc-number">1.</span> <span class="toc-text">一些前提介绍</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%87%AA%E5%8A%A8%E5%8C%96%E7%89%88%E6%9C%AC%E5%8F%B7"><span class="toc-number">2.</span> <span class="toc-text">自动化版本号</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%87%AA%E5%8A%A8%E5%8F%91%E5%B8%83%E6%B5%81%E7%A8%8B"><span class="toc-number">3.</span> <span class="toc-text">自动发布流程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Build"><span class="toc-number">3.1.</span> <span class="toc-text">Build</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%A1%B9%E7%9B%AE%E4%BE%9D%E8%B5%96"><span class="toc-number">3.2.</span> <span class="toc-text">项目依赖</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BC%96%E8%AF%91%E6%96%87%E4%BB%B6"><span class="toc-number">3.3.</span> <span class="toc-text">编译文件</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#TCB"><span class="toc-number">3.4.</span> <span class="toc-text">TCB</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E4%B8%8D%E4%BD%BF%E7%94%A8-TCB-%E5%AE%98%E6%96%B9%E6%8F%90%E4%BE%9B%E7%9A%84-Action%EF%BC%9F"><span class="toc-number">3.4.1.</span> <span class="toc-text">为什么不使用 TCB 官方提供的 Action？</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Kubernetes"><span class="toc-number">3.5.</span> <span class="toc-text">Kubernetes</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Static"><span class="toc-number">3.6.</span> <span class="toc-text">Static</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#CDN"><span class="toc-number">3.7.</span> <span class="toc-text">CDN</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%80%9A%E7%9F%A5"><span class="toc-number">4.</span> <span class="toc-text">通知</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BB%93%E5%B0%BE"><span class="toc-number">5.</span> <span class="toc-text">结尾</span></a></li></ol>
+    </div>
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/&text=虚拟星空的 Web 前端自动化发布实践"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/&title=虚拟星空的 Web 前端自动化发布实践"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/&is_video=false&description=虚拟星空的 Web 前端自动化发布实践"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=虚拟星空的 Web 前端自动化发布实践&body=Check out this article: https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/&title=虚拟星空的 Web 前端自动化发布实践"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/&title=虚拟星空的 Web 前端自动化发布实践"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/&title=虚拟星空的 Web 前端自动化发布实践"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/&title=虚拟星空的 Web 前端自动化发布实践"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/&name=虚拟星空的 Web 前端自动化发布实践&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://teakowa.me/archives/%E8%99%9A%E6%8B%9F%E6%98%9F%E7%A9%BA%E7%9A%84-web-%E5%89%8D%E7%AB%AF%E8%87%AA%E5%8A%A8%E5%8C%96%E5%8F%91%E5%B8%83%E5%AE%9E%E8%B7%B5/&t=虚拟星空的 Web 前端自动化发布实践"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fas fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fas fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fas fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2018-2024
+    Teakowa
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+ 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script> 
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script> 
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="far fa-clone"></i>';
+    btn += '</span>'; 
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Google Analytics -->
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-131734254-1"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-131734254-1');
+    </script>
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Umami Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>
