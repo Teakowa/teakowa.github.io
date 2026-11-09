@@ -1,0 +1,38 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { tagSlug, ymd } from '../site';
+
+interface Props {
+  posts: CollectionEntry<'posts'>[];
+}
+
+const { posts } = Astro.props;
+---
+
+<div class="ls">
+  <table>
+    <tbody>
+      {
+        posts.map((post) => (
+          <tr>
+            <td class="perm">-rw-r--r--</td>
+            <td class="date">
+              <time datetime={post.data.date.toISOString()}>{ymd(post.data.date)}</time>
+            </td>
+            <td class="name">
+              <a href={`/archives/${post.id}/`}>{post.data.title}</a>
+            </td>
+            <td class="tag">
+              {post.data.tags.map((tag, i) => (
+                <>
+                  {i > 0 && ' '}
+                  <a href={`/tags/${tagSlug(tag)}/`}>{tag.toLowerCase()}</a>
+                </>
+              ))}
+            </td>
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+</div>

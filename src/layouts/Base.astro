@@ -1,0 +1,142 @@
+---
+import '@fontsource-variable/jetbrains-mono';
+import '../styles/global.css';
+import { SITE, CONTACT } from '../site';
+
+interface Props {
+  title?: string;
+  description?: string;
+  cwd?: string;
+  article?: { date: Date; tags: string[] };
+}
+
+const { title, description = SITE.description, cwd = '~', article } = Astro.props;
+const fullTitle = title ? `${title} · ${SITE.title}` : SITE.title;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const path = Astro.url.pathname;
+const nav = [
+  { key: 'w', label: 'writing', href: '/archives/' },
+  { key: 'p', label: 'projects', href: '/#projects' },
+  { key: 'a', label: 'about', href: '/about/' },
+];
+const jsonLd = article && {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: title,
+  description,
+  datePublished: article.date.toISOString(),
+  keywords: article.tags.join(', '),
+  author: { '@type': 'Person', name: SITE.author, url: 'https://github.com/Teakowa' },
+  mainEntityOfPage: canonical.href,
+};
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <meta name="author" content={SITE.author} />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" type="application/rss+xml" title={SITE.title} href="/atom.xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <link rel="icon" href="/images/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192" />
+    <link rel="apple-touch-icon" href="/images/apple-touch-icon.png" />
+    <meta name="theme-color" content="#f4f5f3" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0e1113" media="(prefers-color-scheme: dark)" />
+    <meta property="og:type" content={article ? 'article' : 'website'} />
+    <meta property="og:site_name" content={SITE.title} />
+    <meta property="og:title" content={title ?? SITE.title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={new URL('/images/logo.jpg', Astro.site)} />
+    <meta property="og:locale" content="zh_CN" />
+    {article && <meta property="article:published_time" content={article.date.toISOString()} />}
+    {article?.tags.map((tag) => <meta property="article:tag" content={tag} />)}
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:site" content="@teakowa" />
+    {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
+    <script is:inline>
+      try {
+        const t = localStorage.getItem('theme');
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+      } catch {}
+    </script>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="head">
+        <a href="/"><span class="host">teakowa@me</span>:<span class="cwd">{cwd}</span></a>
+        <nav aria-label="主导航">
+          {
+            nav.map((item) => (
+              <a href={item.href} aria-current={path === item.href ? 'page' : undefined} aria-keyshortcuts={item.key}>
+                <u>{item.label[0]}</u>
+                {item.label.slice(1)}
+              </a>
+            ))
+          }
+          <button class="theme" type="button" id="theme" aria-label="切换主题：自动、浅色、深色">theme:auto</button>
+        </nav>
+      </header>
+
+      <main class="main">
+        <slot />
+      </main>
+
+      <footer class="foot">
+        <p class="cmd">cat ~/.contact</p>
+        <dl>
+          {
+            CONTACT.map((c) => (
+              <>
+                <dt>{c.key}</dt>
+                <dd>
+                  <a href={c.href}>{c.label}</a>
+                </dd>
+              </>
+            ))
+          }
+        </dl>
+        <small>
+          内容采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可 · 2018–{new Date().getFullYear()}
+        </small>
+        <p class="cmd"><span class="cursor" aria-hidden="true"></span></p>
+      </footer>
+    </div>
+
+    <script>
+      const root = document.documentElement;
+      const button = document.getElementById('theme')!;
+      const order = ['auto', 'light', 'dark'] as const;
+      type Theme = (typeof order)[number];
+
+      const current = (): Theme => (root.dataset.theme as Theme | undefined) ?? 'auto';
+      const render = () => (button.textContent = `theme:${current()}`);
+
+      button.addEventListener('click', () => {
+        const next = order[(order.indexOf(current()) + 1) % order.length];
+        if (next === 'auto') delete root.dataset.theme;
+        else root.dataset.theme = next;
+        try {
+          if (next === 'auto') localStorage.removeItem('theme');
+          else localStorage.setItem('theme', next);
+        } catch {}
+        render();
+      });
+      render();
+
+      const shortcuts: Record<string, string> = { w: '/archives/', p: '/#projects', a: '/about/' };
+      document.addEventListener('keydown', (e) => {
+        if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+        const el = e.target as HTMLElement;
+        if (el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName)) return;
+        const href = shortcuts[e.key];
+        if (href) location.href = href;
+      });
+    </script>
+  </body>
+</html>
