@@ -1,0 +1,15 @@
+---
+import Base from '../../layouts/Base.astro';
+import PostList from '../../components/PostList.astro';
+import { getPosts } from '../../site';
+
+const posts = await getPosts();
+---
+
+<Base title="Writing" description="Teakowa 的全部文章。" cwd="~/writing">
+  <section class="section" aria-labelledby="all">
+    <h2 id="all">ls -lt ~/writing</h2>
+    <PostList posts={posts} />
+    <p class="meta">total {posts.length}</p>
+  </section>
+</Base>

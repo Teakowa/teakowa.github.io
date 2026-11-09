@@ -1,0 +1,58 @@
+---
+import Base from '../layouts/Base.astro';
+import PostList from '../components/PostList.astro';
+import { PROJECTS, SITE, getPosts } from '../site';
+
+const posts = await getPosts();
+const days = Math.floor((Date.now() - Date.parse(SITE.githubSince)) / 86_400_000);
+---
+
+<Base>
+  <section class="hero" aria-label="简介">
+    <p class="cmd">whoami</p>
+    <h1>teakowa<span>_</span></h1>
+    <p class="out">
+      Senior Reboot Engineer. Founder <a href="https://github.com/Bytefloat">@Bytefloat</a>, building{' '}
+      <a href="https://github.com/OWBastion">@OWBastion</a> <a href="https://github.com/wrightkit">@wrightkit</a>.<br />
+      写一些奇奇怪怪、可以提升效率的小东西。
+    </p>
+    <p class="cmd">uptime</p>
+    <p class="out">
+      up <span class="num" id="uptime" data-since={SITE.githubSince}>{days.toLocaleString('en-US')}</span> days since {SITE.githubSince},{' '}
+      <span class="num">{posts.length}</span> posts
+    </p>
+    <pre class="dmesg"><span class="ts">[    0.000000]</span> hydra: head cut off
+<span class="ts">[    0.000001]</span> hydra: spawning 2 more ... <span class="ok">ok</span></pre>
+  </section>
+
+  <section class="section" aria-labelledby="writing">
+    <h2 id="writing">ls -lt ~/writing</h2>
+    <PostList posts={posts} />
+  </section>
+
+  <section class="section" aria-labelledby="projects">
+    <h2 id="projects">ls ~/projects</h2>
+    <ul class="proj">
+      {
+        PROJECTS.map((p) => (
+          <li>
+            <a href={p.href}>
+              <h3>
+                {p.name}
+                <span>{p.lang}</span>
+              </h3>
+              <p>{p.desc}</p>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+</Base>
+
+<script>
+  const el = document.getElementById('uptime');
+  if (el?.dataset.since) {
+    el.textContent = Math.floor((Date.now() - Date.parse(el.dataset.since)) / 86_400_000).toLocaleString('en-US');
+  }
+</script>

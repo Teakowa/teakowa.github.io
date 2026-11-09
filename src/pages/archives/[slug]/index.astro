@@ -1,0 +1,44 @@
+---
+import { render } from 'astro:content';
+import Base from '../../../layouts/Base.astro';
+import { getPosts, tagSlug, ymd } from '../../../site';
+
+export async function getStaticPaths() {
+  const posts = await getPosts();
+  return posts.map((post) => ({ params: { slug: post.id }, props: { post } }));
+}
+
+const { post } = Astro.props;
+const { title, date, tags, description } = post.data;
+const { Content } = await render(post);
+---
+
+<Base title={title} description={description ?? title} cwd="~/writing" article={{ date, tags }}>
+  <article class="section">
+    <p class="cmd">less ~/writing/{post.id}.md</p>
+    <header>
+      <p class="meta">
+        date: <time datetime={date.toISOString()}>{ymd(date)}</time>
+        {
+          tags.length > 0 && (
+            <>
+              {' · tags: ['}
+              {tags.map((tag, i) => (
+                <>
+                  {i > 0 && ', '}
+                  <a href={`/tags/${tagSlug(tag)}/`}>{tag.toLowerCase()}</a>
+                </>
+              ))}
+              {']'}
+            </>
+          )
+        }
+      </p>
+      <h1 class="title">{title}</h1>
+    </header>
+    <div class="prose">
+      <Content />
+    </div>
+    <p class="cmd"><a class="back" href="/archives/">cd ..</a></p>
+  </article>
+</Base>

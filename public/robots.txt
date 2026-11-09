@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://teakowa.me/sitemap-index.xml
